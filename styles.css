@@ -1,0 +1,17 @@
+html, body { height: 100%; margin: 0; }
+#map { height: calc(100vh - 46px); }
+#bar {
+  height: 46px; display: flex; align-items: center; gap: 16px;
+  padding: 6px 12px; font: 14px/1.4 system-ui, sans-serif;
+  border-top: 1px solid #e5e7eb; background: #f8fafc;
+}
+.pill {
+  padding: 4px 8px; border-radius: 999px; background: #eef2ff;
+}
+button {
+  padding: 6px 10px; border-radius: 8px; border: 1px solid #cbd5e1;
+  background: #fff; cursor: pointer;
+}
+.error {
+  color: #b91c1c; font-weight: 600;
+}

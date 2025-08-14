@@ -1,182 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Serbia Toll Calculator (Demo)</title>
+  <meta charset="utf-8" />
+  <title>Serbia Toll Demo — Map Route</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <!-- Leaflet CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-X20ndOqiyJ0t6fQ8Oce3ZRmU6jSVswwW++v2b4QkYv0="
-    crossorigin=""
-  />
-  <!-- Leaflet Routing Machine CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css"
-  />
-  <style>
-    /* Basic page styling */
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
-    }
-
-    #map {
-      width: 100%;
-      height: 90vh;
-    }
-
-    #info {
-      height: 10vh;
-      padding: 0.5rem 1rem;
-      background-color: #f7f7f7;
-      border-top: 1px solid #ccc;
-      font-size: 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    #info .instructions {
-      flex: 2;
-    }
-
-    #info .price {
-      flex: 1;
-      text-align: right;
-      font-weight: bold;
-    }
-  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Your custom CSS -->
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div id="map"></div>
-  <div id="info">
-    <div class="instructions">
-      <p>
-        Right‑click once on the map to set the starting point. Right‑click again
-        to set the destination. The app will draw the route and estimate a
-        toll price based on the route length.
-      </p>
-    </div>
-    <div id="price" class="price">Estimated price: —</div>
+  <div id="bar">
+    <span>Left-click to set <b>start</b>, then left-click to set <b>end</b>.</span>
+    <span id="distance" class="pill">Distance: —</span>
+    <span id="price" class="pill">Estimated price: —</span>
+    <button id="resetBtn">Reset</button>
+    <span id="msg" class="error"></span>
   </div>
 
-  <!-- Leaflet JS -->
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-p4thO8BR+0DY3fXg+pUc0MgLkL84Q4SIf2QmdKGmYxg="
-    crossorigin=""
-  ></script>
-  <!-- Leaflet Routing Machine JS -->
-  <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
-
-  <script>
-    // Dummy data for a handful of toll ramps in Serbia.
-    // Replace or expand this list with real ramp locations later.
-    const tollStations = [
-      { name: "Belgrade (Beograd)", lat: 44.7866, lon: 20.4489 },
-      { name: "Novi Sad", lat: 45.2671, lon: 19.8335 },
-      { name: "Niš", lat: 43.3190, lon: 21.8958 },
-      { name: "Subotica", lat: 46.1003, lon: 19.6670 },
-    ];
-
-    // Create map centered roughly on Serbia
-    const map = L.map('map').setView([44.4, 20.6], 7);
-
-    // Add OpenStreetMap tile layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
-
-    // Add markers for each toll station
-    tollStations.forEach(station => {
-      L.marker([station.lat, station.lon])
-        .addTo(map)
-        .bindPopup(`<strong>${station.name}</strong>`);
-    });
-
-    // Variables to hold the start and end points
-    let startPoint = null;
-    let endPoint = null;
-    let routingControl = null;
-    let startMarker = null;
-    let endMarker = null;
-
-    // Helper to reset existing route and markers
-    function resetRoute() {
-      if (routingControl) {
-        map.removeControl(routingControl);
-        routingControl = null;
-      }
-      if (startMarker) {
-        map.removeLayer(startMarker);
-        startMarker = null;
-      }
-      if (endMarker) {
-        map.removeLayer(endMarker);
-        endMarker = null;
-      }
-      startPoint = null;
-      endPoint = null;
-      document.getElementById('price').textContent = 'Estimated price: —';
-    }
-
-    // Listen for right‑click events on the map
-    map.on('contextmenu', function (e) {
-      // If both start and end already set, reset
-      if (startPoint && endPoint) {
-        resetRoute();
-      }
-      if (!startPoint) {
-        startPoint = e.latlng;
-        // Add a marker for the start point
-        startMarker = L.marker(startPoint, { icon: L.icon({
-          iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-          iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-          shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-          iconAnchor: [12, 41],
-          popupAnchor: [1, -34],
-          shadowSize: [41, 41],
-        }) }).addTo(map).bindPopup('Start').openPopup();
-      } else if (!endPoint) {
-        endPoint = e.latlng;
-        // For simplicity in this demo, reuse the default marker for the destination
-        endMarker = L.marker(endPoint, { icon: L.icon({
-          iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-          iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-          shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-          iconAnchor: [12, 41],
-          popupAnchor: [1, -34],
-          shadowSize: [41, 41],
-        }) }).addTo(map).bindPopup('Destination').openPopup();
-
-        // Create a routing control once both points are defined
-        routingControl = L.Routing.control({
-          waypoints: [startPoint, endPoint],
-          router: L.Routing.osrmv1({
-            serviceUrl: 'https://router.project-osrm.org/route/v1',
-          }),
-          show: false, // hide the directions list
-          addWaypoints: false, // disable dragging waypoints by default
-          routeWhileDragging: false,
-        }).addTo(map);
-
-        routingControl.on('routesfound', function (e) {
-          const routes = e.routes;
-          if (routes.length > 0) {
-            const distance = routes[0].summary.totalDistance; // in meters
-            // Estimate toll price: 6 RSD per kilometer (dummy rate)
-            const priceRSD = (distance / 1000) * 6;
-            document.getElementById('price').textContent =
-              'Estimated price: ' + priceRSD.toFixed(0) + ' RSD';
-          }
-        });
-      }
-    });
-  </script>
+  <!-- Leaflet JS (with fallback) -->
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Your custom JS -->
+  <script src="script.js"></script>
 </body>
 </html>

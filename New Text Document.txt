@@ -1,5 +1,0 @@
-Terminal:
-python3 -m http.server 8000
-
-Browser:
-http://localhost:8000/index_route.html
