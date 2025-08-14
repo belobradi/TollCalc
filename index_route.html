@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Serbia Toll Demo — Map Route</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Leaflet CSS (jsDelivr) -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #map { height: calc(100vh - 46px); }
+    #bar {
+      height: 46px; display:flex; align-items:center; gap:16px;
+      padding: 6px 12px; font: 14px/1.4 system-ui, sans-serif;
+      border-top: 1px solid #e5e7eb; background:#f8fafc;
+    }
+    .pill { padding: 4px 8px; border-radius: 999px; background:#eef2ff; }
+    button { padding: 6px 10px; border-radius: 8px; border: 1px solid #cbd5e1; background:#fff; cursor:pointer; }
+    .error { color:#b91c1c; font-weight:600; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="bar">
+    <span>Left-click to set <b>start</b>, then left-click to set <b>end</b>.</span>
+    <span id="distance" class="pill">Distance: —</span>
+    <span id="price" class="pill">Estimated price: —</span>
+    <button id="resetBtn">Reset</button>
+    <span id="msg" class="error"></span>
+  </div>
+
+  <!-- Leaflet JS (with fallback) -->
+  <script>
+  
+    (function loadLeaflet() {
+      const s1 = document.createElement('script');
+      s1.src = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js';
+      s1.onload = init;
+      s1.onerror = function(){
+        const s2 = document.createElement('script');
+        s2.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        s2.onload = init;
+        s2.onerror = () => document.getElementById('msg').textContent =
+          'Could not load Leaflet JS. A network or ad/corp filter may be blocking CDNs.';
+        document.body.appendChild(s2);
+      };
+      document.body.appendChild(s1);
+    })();
+	
+	const SECTIONS = [
+	  { corridor: "A1",
+		from: { id: "SUB", name: "Subotica", lat: 46.02106890344609, lon: 19.733910649991444 },
+		to:   { id: "ZED1", name: "Žednik", lat: 45.934610792647035, lon: 19.707585844346294 },
+		price_rsd: 110
+	  },
+	  { corridor: "A1",
+		from: { id: "ZED2", name: "Žednik", lat: 45.93382674645267, lon: 19.71122516188835 },
+		to:   { id: "SUB", name: "Subotica", lat: 46.02106890344609, lon: 19.733910649991444 },
+		price_rsd: 110
+	  },
+	];
+
+	const R = 6367e3; // Earth's radius in meters
+	const toRad = d => d * Math.PI / 180;
+  
+  function haversineMeters(p1, p2) {
+    const [lat1, lon1] = p1;
+    const [lat2, lon2] = p2;
+    const toRad = deg => deg * Math.PI / 180;
+
+    const f1 = toRad(lat1);
+    const f2 = toRad(lat2);
+    const df = toRad(lat2 - lat1);
+    const dl = toRad(lon2 - lon1);
+
+    const a = Math.sin(df / 2) ** 2 +
+              Math.cos(f1) * Math.cos(f2) *
+              Math.sin(dl / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // distance in meters
+  }
+	
+	function sectionTraversedStrict(routeLatLngs, from, to, tolMeters = 30) {
+	  let nearFrom = false;
+	  for (const [lat, lon] of routeLatLngs) {
+      const dFrom = haversineMeters([lat, lon], [from.lat, from.lon]);
+      const dTo = haversineMeters([lat, lon], [to.lat, to.lon]);
+
+      if (!nearFrom && dFrom <= tolMeters) nearFrom = true;
+      if (nearFrom && dTo <= tolMeters) return true;
+	  }
+	  return false;
+	}
+
+	function computeSectionCharges(routeCoords, sections) {
+	  const items = [];
+	  for (const s of sections) {
+		if (sectionTraversedStrict(routeCoords, s.from, s.to)) {
+		  items.push({ corridor: s.corridor, from: s.from.name, to: s.to.name, price_rsd: s.price_rsd });
+		}
+	  }
+	  const total = items.reduce((acc, it) => acc + it.price_rsd, 0);
+	  return { total, items };
+	}
+
+    function init() {
+      const map = L.map('map').setView([44.8, 20.5], 7);
+
+      // OSM tiles
+      const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+
+      tiles.on('tileerror', () => {
+        document.getElementById('msg').textContent =
+          'Map tiles failed to load. Check internet, VPN/proxy, or any network filters.';
+      });
+
+      let start = null, end = null, routeLayer = null, startM = null, endM = null;
+
+      function reset() {
+        start = end = null;
+        if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
+        if (startM) { map.removeLayer(startM); startM = null; }
+        if (endM) { map.removeLayer(endM); endM = null; }
+        uiDistance('—'); uiPrice('—'); msg('');
+      }
+      document.getElementById('resetBtn').onclick = reset();
+
+      function uiDistance(t){ document.getElementById('distance').textContent = 'Distance: ' + t; }
+      function uiPrice(t){ document.getElementById('price').textContent = 'Estimated price: ' + t; }
+      function msg(t){ document.getElementById('msg').textContent = t; }
+
+      // Dummy ramps for visuals (edit with real ones later)
+      const tollStations = [
+        { name: 'Subotica', lat:46.02106890344609, lon:19.733910649991444 },
+        { name: 'Žednik', lat:45.93384453147707, lon:19.71117780120375 },
+        { name: 'Žednik', lat:45.934602997337485, lon:19.70756640631364 },
+        { name: 'Žednik', lat:45.934602997337485, lon:19.70756640631364 },
+        { name: 'Bačka Topola', lat:45.82477582210935, lon:19.689025250037613 },
+        { name: 'Bačka Topola', lat:45.82325319668907, lon:19.68496600736388 },
+        { name: 'Feketić', lat:45.64695060949802, lon:19.715526963568884 },
+        { name: 'Feketić', lat:45.64022879572122, lon:19.714610810281027 },
+        { name: 'Vrbas', lat:45.55521319727059, lon:19.721953626753635 },
+        { name: 'Vrbas', lat:45.55435285849692, lon:19.71768545327575 },
+        { name: 'Zmajevo', lat:45.44207060609403, lon:19.735400365938354 },
+        { name: 'Zmajevo', lat:45.44041040972998, lon:19.739507490727927 },
+        { name: 'Novi Sad - Sever', lat:45.31340117564519, lon:19.799726456982096 },
+        { name: 'Novi Sad - Sever', lat:45.31297901872873, lon:19.798959094972133 },
+      ];
+      tollStations.forEach(s => L.circleMarker([s.lat, s.lon], {radius:5}).addTo(map).bindTooltip(s.name));
+
+      // Left-click to select points
+      map.on('click', async (e) => {
+        if (!start) {
+          start = [e.latlng.lat, e.latlng.lng];
+          startM = L.marker(start).addTo(map).bindTooltip('Start').openTooltip();
+          msg('');
+        } else if (!end) {
+          end = [e.latlng.lat, e.latlng.lng];
+          endM = L.marker(end).addTo(map).bindTooltip('End').openTooltip();
+          await drawRoute(start, end);
+        } else {
+          // both exist -> reset to pick new
+          reset();
+        }
+      });
+
+      async function drawRoute(a, b) {
+        msg('Routing…');
+        try {
+          const url = `https://router.project-osrm.org/route/v1/driving/${a[1]},${a[0]};${b[1]},${b[0]}?overview=full&geometries=geojson`;
+          const res = await fetch(url, { mode: 'cors' });
+          if (!res.ok) throw new Error('OSRM response not OK');
+          const data = await res.json();
+          if (!data.routes || !data.routes[0]) throw new Error('No route found');
+
+          const route = data.routes[0];
+          const coords = route.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+
+          if (routeLayer) map.removeLayer(routeLayer);
+          routeLayer = L.polyline(coords, { weight: 5 }).addTo(map);
+          map.fitBounds(routeLayer.getBounds(), { padding: [30, 30] });
+
+		  const km = (route.distance / 1000);
+		  uiDistance(km.toFixed(1) + ' km');
+
+		  // Section-based charging
+		  const result = computeSectionCharges(coords, SECTIONS);
+		  uiPrice(result.total + ' RSD');
+
+		  // Optional: inspect which sections were counted
+		  console.log('Charged sections:', result.items);
+          msg('');
+        } catch (err) {
+          console.error(err);
+          msg('Routing failed (network blocked or OSRM unavailable).');
+        }
+      }
+    }
+  </script>
+</body>
+</html>
