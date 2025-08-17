@@ -4,24 +4,49 @@
   <meta charset="utf-8" />
   <title>Serbia Toll Demo — Map Route</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
-  <!-- Your custom CSS -->
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div id="map"></div>
-  <div id="bar">
-    <span>Left-click to set <b>start</b>, then left-click to set <b>end</b>.</span>
-    <span id="distance" class="pill">Distance: —</span>
-    <span id="price" class="pill">Estimated price: —</span>
-    <button id="resetBtn">Reset</button>
-    <span id="msg" class="error"></span>
+  <div class="app">
+    <!-- Left controls -->
+    <aside class="sidebar">
+      <!-- Start / End “search” boxes (purely visual; your JS still uses map clicks) -->
+      <div class="field">
+        <input type="text" id="startAddress" name="address" class="textlike" placeholder="Odaberite adresu polaska">
+      </div>
+      <div class="field">
+        <input type="text" id="endAddress" name="address" class="textlike" placeholder="Odaberite destinaciju">
+      </div>
+
+      <!-- Vehicle type (visual only) -->
+      <div class="field">
+        <label for="vehicleCategory">Kategorija vozila</label>
+        <select id="vehicleCategory" name="vehicleCategory" class="textlike">
+          <option value="k1">K1 (Automobil)</option>
+        </select>
+      </div>
+
+      <!-- Your live UI elements (kept same IDs so JS works) -->
+      <div class="field" style="margin-top:8px; display:flex; gap:8px;">
+        <button id="resetBtn" class="btn" style="flex:1;">Poništi</button>
+      </div>
+      <div class="pills">
+        <span id="distance" class="pill"></span>
+        <span id="price" class="pill"></span>
+      </div>
+      <div class="field">
+        <span id="msg" class="error"></span>
+      </div>
+    </aside>
+
+    <!-- Right map -->
+    <main class="map-wrap">
+      <div id="map"></div>
+    </main>
   </div>
 
-  <!-- Leaflet JS (with fallback) -->
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-  <!-- Your custom JS -->
   <script src="script.js"></script>
 </body>
 </html>

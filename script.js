@@ -41,7 +41,7 @@ function makeLabelMarker (point, extraClass) {
     icon: L.divIcon({
       className: `toll-label ${extraClass || ''}`,
       html: `<span class="toll-dot"></span><span class="toll-text">${point.name ?? 'Ramp'}</span>`,
-      iconSize: [0, 0],
+      // iconSize: null   // omit this line entirely
       iconAnchor: [0, 0]
     })
   })
@@ -120,7 +120,7 @@ async function startEndToRouteData (start, end) {
 
 // --- Routing logic ---
 async function drawRoute (a, b) {
-  showMessage('Routing…')
+  showMessage('Tražim putanju...')
   try {
     let [distance, coords] = await startEndToRouteData(a, b)
 
@@ -136,6 +136,8 @@ async function drawRoute (a, b) {
     console.log('Charged sections:', charges.items)
 
     renderRampsOnMap(computeRamps(coords))
+
+    document.querySelector('.pills').style.display = 'flex'
     showMessage('')
   } catch (err) {
     console.error(err)
@@ -153,7 +155,7 @@ async function onMapClick (e) {
     showMessage('')
   } else if (!end) {
     end = pos
-    endMarker = L.marker(pos).addTo(map).bindTooltip('End').openTooltip()
+    endMarker = L.marker(pos).addTo(map).bindTooltip('Destinacija').openTooltip()
     await drawRoute(start, end)
   } else {
     reset()
@@ -168,17 +170,16 @@ function reset () {
 
   routeLayer = startMarker = endMarker = entryMarker = exitMarker = null
 
-  updateDistance('—')
-  updatePrice('—')
+  document.querySelector('.pills').style.display = 'none'
   showMessage('')
 }
 
 // --- UI helpers ---
 function updateDistance (t) {
-  document.getElementById('distance').textContent = 'Distance: ' + t
+  document.getElementById('distance').textContent = 'Kilometraža: ' + t
 }
 function updatePrice (t) {
-  document.getElementById('price').textContent = 'Estimated price: ' + t
+  document.getElementById('price').textContent = 'Okvirna cena: ' + t
 }
 function showMessage (t) {
   document.getElementById('msg').textContent = t
