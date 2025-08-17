@@ -15,3 +15,20 @@ button {
 .error {
   color: #b91c1c; font-weight: 600;
 }
+.toll-dot {
+  width: 8px;
+  height: 8px;
+  background: red;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 4px;
+}
+.toll-text {
+  font-size: 12px;
+  background: white;
+  padding: 1px 3px;
+  border-radius: 3px;
+}
+.toll-label {
+  white-space: nowrap;
+}
