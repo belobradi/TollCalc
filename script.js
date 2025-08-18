@@ -150,7 +150,6 @@ async function reverseGeocode ([lat, lon]) {
   const res = await fetch(url, {
     headers: {
       Accept: 'application/json',
-      // Be polite to Nominatim: add your app name/email
       'User-Agent': 'SerbiaTollDemo/1.0 (contact: stankic.nemanja@gmail.com)'
     }
   })
@@ -320,6 +319,70 @@ function init () {
 
   document.getElementById('resetBtn').onclick = reset
   map.on('click', onMapClick)
+
+  // Consistent label (same as reverse geocode)
+  const labelFn = item =>
+    typeof formatAddressParts === 'function' ? formatAddressParts(item.address) || item.display_name : item.display_name
+
+  AddressSearch.init({
+    countrycodes: 'rs',
+    bounded: false,
+    getViewbox: () => {
+      const b = map.getBounds()
+      return [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].join(',')
+    },
+    labelFn,
+
+    onStartPick: ({ lat, lon, label }) => {
+      if (startMarker) {
+        map.removeLayer(startMarker)
+        startMarker = null
+      }
+      if (entryMarker) {
+        map.removeLayer(entryMarker)
+        entryMarker = null
+      }
+      if (exitMarker) {
+        map.removeLayer(exitMarker)
+        exitMarker = null
+      }
+      if (routeLayer) {
+        map.removeLayer(routeLayer)
+        routeLayer = null
+      }
+
+      start = [lat, lon]
+      startMarker = L.marker(start).addTo(map).bindTooltip('Start').openTooltip()
+      const s = document.getElementById('startAddress')
+      if (s) s.value = label
+      if (end) drawRoute(start, end)
+    },
+
+    onEndPick: ({ lat, lon, label }) => {
+      if (endMarker) {
+        map.removeLayer(endMarker)
+        endMarker = null
+      }
+      if (entryMarker) {
+        map.removeLayer(entryMarker)
+        entryMarker = null
+      }
+      if (exitMarker) {
+        map.removeLayer(exitMarker)
+        exitMarker = null
+      }
+      if (routeLayer) {
+        map.removeLayer(routeLayer)
+        routeLayer = null
+      }
+
+      end = [lat, lon]
+      endMarker = L.marker(end).addTo(map).bindTooltip('Destinacija').openTooltip()
+      const e = document.getElementById('endAddress')
+      if (e) e.value = label
+      if (start) drawRoute(start, end)
+    }
+  })
 }
 
 // --- Entry point ---
