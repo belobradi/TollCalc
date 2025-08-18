@@ -41,7 +41,6 @@ function makeLabelMarker (point, extraClass) {
     icon: L.divIcon({
       className: `toll-label ${extraClass || ''}`,
       html: `<span class="toll-dot"></span><span class="toll-text">${point.name ?? 'Ramp'}</span>`,
-      // iconSize: null   // omit this line entirely
       iconAnchor: [0, 0]
     })
   })
@@ -146,6 +145,50 @@ async function drawRoute (a, b) {
 }
 
 // --- Event handlers ---
+async function reverseGeocode ([lat, lon]) {
+  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`
+  const res = await fetch(url, {
+    headers: {
+      Accept: 'application/json',
+      // Be polite to Nominatim: add your app name/email
+      'User-Agent': 'SerbiaTollDemo/1.0 (contact: stankic.nemanja@gmail.com)'
+    }
+  })
+  if (!res.ok) throw new Error('Reverse geocode failed')
+  return res.json()
+}
+
+// Pick the best street-ish and place-ish fields and format
+function formatAddressParts (addr) {
+  if (!addr) return ''
+
+  // street candidates (ordered by “streetiness”)
+  const street = addr.road || addr.pedestrian || addr.footway || addr.street || addr.path || addr.cycleway || ''
+  const houseNo = addr.house_number ? ` ${addr.house_number}` : ''
+
+  // place (prefer city/town/village; fall back sanely)
+  const place =
+    addr.city || addr.town || addr.village || addr.hamlet || addr.municipality || addr.city_district || addr.suburb || addr.county || ''
+
+  const postcode = addr.postcode || ''
+  const country = addr.country || ''
+
+  // Build only the parts you want, skip empties
+  const parts = []
+  if (street) parts.push(street + houseNo)
+  if (place) parts.push(place)
+  if (postcode) parts.push(postcode)
+  if (country) parts.push(country)
+
+  return parts.join(', ')
+}
+
+// Convenience: reverse + format (returns your short string)
+async function reverseToShortAddress ([lat, lon]) {
+  const data = await reverseGeocode([lat, lon])
+  return formatAddressParts(data.address) || data.display_name || `${lat.toFixed(5)}, ${lon.toFixed(5)}`
+}
+
 async function onMapClick (e) {
   const pos = [e.latlng.lat, e.latlng.lng]
 
@@ -153,13 +196,34 @@ async function onMapClick (e) {
     start = pos
     startMarker = L.marker(pos).addTo(map).bindTooltip('Start').openTooltip()
     showMessage('')
+
+    // fill startAddress
+    try {
+      const shortAddr = await reverseToShortAddress(start)
+      setAddressField('startAddress', shortAddr)
+    } catch {
+      setAddressField('startAddress', `${start[0].toFixed(5)}, ${start[1].toFixed(5)}`)
+    }
   } else if (!end) {
     end = pos
     endMarker = L.marker(pos).addTo(map).bindTooltip('Destinacija').openTooltip()
+
+    // fill endAddress
+    try {
+      const shortAddr = await reverseToShortAddress(end)
+      setAddressField('endAddress', shortAddr)
+    } catch {
+      setAddressField('endAddress', `${end[0].toFixed(5)}, ${end[1].toFixed(5)}`)
+    }
     await drawRoute(start, end)
   } else {
     reset()
   }
+}
+
+function setAddressField (id, text) {
+  const el = document.getElementById(id)
+  if (el) el.value = text || ''
 }
 
 function reset () {
@@ -169,6 +233,9 @@ function reset () {
   })
 
   routeLayer = startMarker = endMarker = entryMarker = exitMarker = null
+
+  setAddressField('startAddress', '')
+  setAddressField('endAddress', '')
 
   document.querySelector('.pills').style.display = 'none'
   showMessage('')
@@ -185,6 +252,48 @@ function showMessage (t) {
   document.getElementById('msg').textContent = t
 }
 
+function clearSide (which) {
+  if (which === 'start') {
+    start = null
+    if (startMarker) {
+      map.removeLayer(startMarker)
+      startMarker = null
+    }
+    if (entryMarker) {
+      map.removeLayer(entryMarker)
+      entryMarker = null
+    }
+    if (exitMarker) {
+      map.removeLayer(exitMarker)
+      exitMarker = null
+    }
+  } else {
+    end = null
+    if (endMarker) {
+      map.removeLayer(endMarker)
+      endMarker = null
+    }
+    if (entryMarker) {
+      map.removeLayer(entryMarker)
+      entryMarker = null
+    }
+    if (exitMarker) {
+      map.removeLayer(exitMarker)
+      exitMarker = null
+    }
+  }
+
+  // If either side is missing, the route is invalid → clear it & UI
+  if (routeLayer) {
+    map.removeLayer(routeLayer)
+    routeLayer = null
+  }
+  document.querySelector('.pills').style.display = 'none'
+  updateDistance('')
+  updatePrice('')
+  showMessage('')
+}
+
 // --- Initialization ---
 function init () {
   map = L.map('map').setView([44.8, 20.5], 7)
@@ -197,6 +306,17 @@ function init () {
   tiles.on('tileerror', () => {
     showMessage('Map tiles failed to load. Check internet or proxy settings.')
   })
+
+  const startEl = document.getElementById('startAddress')
+  const endEl = document.getElementById('endAddress')
+
+  const onAddressInput = e => {
+    if (e.target.value.trim() === '') {
+      clearSide(e.target.id === 'startAddress' ? 'start' : 'end')
+    }
+  }
+  startEl.addEventListener('input', onAddressInput)
+  endEl.addEventListener('input', onAddressInput)
 
   document.getElementById('resetBtn').onclick = reset
   map.on('click', onMapClick)
