@@ -47,14 +47,16 @@ function makeLabelMarker (point, extraClass) {
 }
 
 // --- Section logic ---
-function sectionTraversed (routeCoords, p1, p2, tolMeters = 40) {
+function sectionTraversed (routeCoords, p1, p2, tolMeters = 50) {
   let seen1 = false,
     seen2 = false
   for (const [lat, lon] of routeCoords) {
-    if (!seen1 && haversineMeters([lat, lon], [p1.lat, p1.lon]) <= tolMeters) {
+    let d1 = haversineMeters([lat, lon], [p1.lat, p1.lon])
+    let d2 = haversineMeters([lat, lon], [p2.lat, p2.lon])
+    if (!seen1 && d1 <= tolMeters) {
       seen1 = true
     }
-    if (!seen2 && haversineMeters([lat, lon], [p2.lat, p2.lon]) <= tolMeters) {
+    if (!seen2 && d2 <= tolMeters) {
       seen2 = true
     }
   }
@@ -117,11 +119,38 @@ async function startEndToRouteData (start, end) {
   return [route.distance, route.geometry.coordinates.map(([lng, lat]) => [lat, lng])]
 }
 
+function densifyRoute (coords, stepMeters = 100) {
+  const result = []
+  let accumulated = 0
+
+  for (let i = 0; i < coords.length - 1; i++) {
+    const [lat1, lon1] = coords[i]
+    const [lat2, lon2] = coords[i + 1]
+
+    result.push([lat1, lon1])
+
+    const dist = haversineMeters([lat1, lon1], [lat2, lon2])
+    const numPoints = Math.floor(dist / stepMeters)
+
+    for (let j = 1; j < numPoints; j++) {
+      const t = j / numPoints
+      const lat = lat1 + (lat2 - lat1) * t
+      const lon = lon1 + (lon2 - lon1) * t
+      result.push([lat, lon])
+    }
+  }
+
+  // add last point
+  result.push(coords[coords.length - 1])
+  return result
+}
+
 // --- Routing logic ---
 async function drawRoute (a, b) {
   showMessage('Tražim putanju...')
   try {
     let [distance, coords] = await startEndToRouteData(a, b)
+    coords = densifyRoute(coords, 20)
 
     if (routeLayer) map.removeLayer(routeLayer)
     routeLayer = L.polyline(coords, { weight: 5 }).addTo(map)
@@ -182,7 +211,7 @@ function formatAddressParts (addr) {
   return parts.join(', ')
 }
 
-// Convenience: reverse + format (returns your short string)
+// Convenience: reverse + format
 async function reverseToShortAddress ([lat, lon]) {
   const data = await reverseGeocode([lat, lon])
   return formatAddressParts(data.address) || data.display_name || `${lat.toFixed(5)}, ${lon.toFixed(5)}`
