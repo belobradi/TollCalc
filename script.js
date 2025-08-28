@@ -8,6 +8,7 @@ function toRad (deg) {
 // --- Data ---
 let SECTIONS = []
 let STATIONS = []
+let rampBasedPricing = true // toggle this to switch pricing mode
 
 // --- State ---
 let start = null
@@ -81,6 +82,29 @@ function computeSectionCharges (routeCoords) {
   return { total, items }
 }
 
+function chooseHwsection (enter, exit) {
+  const a = enter?.hwsection || null
+  const b = exit?.hwsection || null
+  if (a === b && a !== null) {
+    return a
+  }
+  return null
+}
+
+async function computeRampCharges (ramps) {
+  if (!ramps?.enter || !ramps?.exit) {
+    return { corridor: null, from: null, to: null, price_rsd: 0 }
+  }
+  const corridor = chooseHwsection(ramps.enter, ramps.exit)
+  const price = corridor ? await Matrix.get(corridor, ramps.enter, ramps.exit) : null
+  return {
+    corridor,
+    from: ramps.enter,
+    to: ramps.exit,
+    price_rsd: price ?? 0
+  }
+}
+
 // --- Station logic ---
 function stationPassed (routeCoords, station, tolMeters = 30) {
   return routeCoords.some(([lat, lon]) => haversineMeters([lat, lon], [station.lat, station.lon]) <= tolMeters)
@@ -88,20 +112,22 @@ function stationPassed (routeCoords, station, tolMeters = 30) {
 
 function computeRamps (routeCoords) {
   const passed = STATIONS.filter(st => stationPassed(routeCoords, st))
+  const enter = passed[0]
+  const exit = passed[passed.length - 1]
   return {
-    start: passed[0],
-    end: passed[passed.length - 1]
+    enter,
+    exit
   }
 }
 
 function renderRampsOnMap (ramps) {
   if (!ramps) return
 
-  if (ramps.start) {
-    entryMarker = makeLabelMarker(ramps.start, 'start').addTo(map)
+  if (ramps.enter) {
+    entryMarker = makeLabelMarker(ramps.enter, 'enter').addTo(map)
   }
-  if (ramps.end) {
-    exitMarker = makeLabelMarker(ramps.end, 'end').addTo(map)
+  if (ramps.exit) {
+    exitMarker = makeLabelMarker(ramps.exit, 'exit').addTo(map)
   }
 }
 
@@ -159,11 +185,19 @@ async function drawRoute (a, b) {
     // UI updates
     updateDistance((distance / 1000).toFixed(1) + ' km')
 
-    const charges = computeSectionCharges(coords)
-    updatePrice(charges.total + ' RSD')
-    console.log('Charged sections:', charges.items)
+    ramps = computeRamps(coords)
+    renderRampsOnMap(ramps)
 
-    renderRampsOnMap(computeRamps(coords))
+    let charges
+    if (rampBasedPricing) {
+      charges = await computeRampCharges(ramps)
+      updatePrice((charges.price_rsd ?? 0) + ' RSD')
+      console.log('Charged (ramp):', charges.price_rsd)
+    } else {
+      charges = computeSectionCharges(coords)
+      updatePrice((charges.total ?? 0) + ' RSD')
+      console.log('Charged (sections):', charges.items)
+    }
 
     document.querySelector('.pills').style.display = 'flex'
     showMessage('')
@@ -419,6 +453,7 @@ async function enter () {
   try {
     SECTIONS = await (await fetch('sections.json')).json()
     STATIONS = await (await fetch('stations.json')).json()
+    await Matrix.initAll()
     init()
   } catch (err) {
     console.error('Failed to load sections/stations:', err)
