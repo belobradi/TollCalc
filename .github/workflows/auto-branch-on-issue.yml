@@ -1,0 +1,40 @@
+name: Auto Branch on Issue
+
+on:
+  issues:
+    types: [opened, labeled]
+
+jobs:
+  create-branch:
+    if: github.event.action == 'opened' || github.event.action == 'labeled'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check if issue has dev label
+        id: label_check
+        run: |
+          has_label=false
+          for label in $(jq -r '.issue.labels[].name' <<< "${{ toJson(github.event.issue) }}"); do
+            if [ "$label" = "dev" ]; then
+              has_label=true
+            fi
+          done
+          echo "has_label=$has_label" >> $GITHUB_OUTPUT
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create branch
+        if: steps.label_check.outputs.has_label == 'true'
+        run: |
+          ISSUE_NUMBER=${{ github.event.issue.number }}
+          ISSUE_TITLE=${{ github.event.issue.title }}
+          SLUG=$(echo "$ISSUE_TITLE" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-')
+          BRANCH_NAME="dev/${ISSUE_NUMBER}-${SLUG}"
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git fetch origin main
+          git checkout -b "$BRANCH_NAME" origin/main
+          git push origin "$BRANCH_NAME"
