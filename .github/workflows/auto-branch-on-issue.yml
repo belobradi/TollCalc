@@ -6,35 +6,75 @@ on:
 
 jobs:
   create-branch:
-    if: github.event.action == 'opened' || github.event.action == 'labeled'
+    # Run on "opened" or only when the added label is exactly "dev"
+    if: >
+      github.event.action == 'opened' ||
+      (github.event.action == 'labeled' && github.event.label.name == 'dev')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # needed to push the new branch
 
     steps:
       - name: Check if issue has dev label
         id: label_check
         run: |
           has_label=false
-          for label in $(jq -r '.issue.labels[].name' <<< "${{ toJson(github.event.issue) }}"); do
-            if [ "$label" = "dev" ]; then
+          if [ "${{ github.event.action }}" = "labeled" ]; then
+            # Labeled event carries the exact label
+            if [ "${{ github.event.label.name }}" = "dev" ]; then
               has_label=true
             fi
-          done
-          echo "has_label=$has_label" >> $GITHUB_OUTPUT
+          else
+            # "opened" event — scan all labels on the issue
+            for label in $(jq -r '.issue.labels[].name' <<< '${{ toJson(github.event.issue) }}'); do
+              if [ "$label" = "dev" ]; then
+                has_label=true
+              fi
+            done
+          fi
+          echo "has_label=$has_label" >> "$GITHUB_OUTPUT"
+
+      - name: Stop if no dev label
+        if: steps.label_check.outputs.has_label != 'true'
+        run: echo "Issue has no 'dev' label. Skipping."
 
       - name: Checkout
+        if: steps.label_check.outputs.has_label == 'true'
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Create branch
+      - name: Create branch from master (idempotent)
         if: steps.label_check.outputs.has_label == 'true'
         run: |
-          ISSUE_NUMBER=${{ github.event.issue.number }}
-          ISSUE_TITLE=${{ github.event.issue.title }}
-          SLUG=$(echo "$ISSUE_TITLE" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-')
+          ISSUE_NUMBER='${{ github.event.issue.number }}'
+          ISSUE_TITLE='${{ github.event.issue.title }}'
+
+          # Slugify: ascii, lowercase, keep a-z0-9, collapse non-matches to '-', trim edges
+          SLUG=$(printf "%s" "$ISSUE_TITLE" \
+            | iconv -t ascii//TRANSLIT 2>/dev/null \
+            | tr '[:upper:]' '[:lower:]' \
+            | tr -cs 'a-z0-9' '-' \
+            | sed 's/^-//;s/-$//')
+          # keep it reasonably short
+          SLUG=${SLUG:0:50}
+
           BRANCH_NAME="dev/${ISSUE_NUMBER}-${SLUG}"
 
           git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git fetch origin main
-          git checkout -b "$BRANCH_NAME" origin/main
-          git push origin "$BRANCH_NAME"
+          # Ensure we have the latest master
+          git fetch origin master:origin/master
+
+          # Skip if branch already exists remotely
+          if git ls-remote --exit-code --heads origin "$BRANCH_NAME" >/dev/null 2>&1; then
+            echo "Branch '$BRANCH_NAME' already exists on origin. Nothing to do."
+            exit 0
+          fi
+
+          # Create from origin/master and push
+          git checkout -b "$BRANCH_NAME" origin/master
+          git push -u origin "$BRANCH_NAME"
+
+          echo "Created branch: $BRANCH_NAME"
