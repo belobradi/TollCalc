@@ -6,13 +6,13 @@ on:
 
 jobs:
   create-branch:
-    # Run on "opened" or only when the added label is exactly "dev"
     if: >
       github.event.action == 'opened' ||
       (github.event.action == 'labeled' && github.event.label.name == 'dev')
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # needed to push the new branch
+      contents: write
+      pull-requests: write   # needed to create PR
 
     steps:
       - name: Check if issue has dev label
@@ -20,12 +20,10 @@ jobs:
         run: |
           has_label=false
           if [ "${{ github.event.action }}" = "labeled" ]; then
-            # Labeled event carries the exact label
             if [ "${{ github.event.label.name }}" = "dev" ]; then
               has_label=true
             fi
           else
-            # "opened" event — scan all labels on the issue
             for label in $(jq -r '.issue.labels[].name' <<< '${{ toJson(github.event.issue) }}'); do
               if [ "$label" = "dev" ]; then
                 has_label=true
@@ -33,10 +31,6 @@ jobs:
             done
           fi
           echo "has_label=$has_label" >> "$GITHUB_OUTPUT"
-
-      - name: Stop if no dev label
-        if: steps.label_check.outputs.has_label != 'true'
-        run: echo "Issue has no 'dev' label. Skipping."
 
       - name: Checkout
         if: steps.label_check.outputs.has_label == 'true'
@@ -61,24 +55,47 @@ jobs:
 
           BRANCH_NAME="dev/${ISSUE_NUMBER}-${SLUG}"
 
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+
           git config user.name "github-actions"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Make sure we have the tracking ref for master without creating local branches
           git fetch --prune origin
 
-          # Skip if branch already exists on origin
           if git ls-remote --exit-code --heads origin "$BRANCH_NAME" >/dev/null 2>&1; then
-            echo "Branch '$BRANCH_NAME' already exists on origin. Nothing to do."
+            echo "Branch '$BRANCH_NAME' already exists on origin."
             exit 0
           fi
 
-          # Create from the remote-tracking branch
           git checkout -b "$BRANCH_NAME" origin/master
           git push -u origin "$BRANCH_NAME"
 
-          echo "Created branch: $BRANCH_NAME"
+      - name: Create draft PR linked to issue
+        if: steps.label_check.outputs.has_label == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue_number = context.issue.number
+            const branch_name = process.env.BRANCH_NAME
 
-          git push -u origin "$BRANCH_NAME"
+            // check if PR already exists for this branch
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: `${context.repo.owner}:${branch_name}`,
+              state: "open"
+            })
+            if (prs.length > 0) {
+              core.info(`PR already exists for branch ${branch_name}`)
+              return
+            }
 
-          echo "Created branch: $BRANCH_NAME"
+            await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: branch_name,
+              base: "master",
+              title: `Draft: ${branch_name}`,
+              body: `Linked to #${issue_number}`,
+              draft: true
+            })
