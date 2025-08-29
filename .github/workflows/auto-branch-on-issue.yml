@@ -47,16 +47,16 @@ jobs:
       - name: Create branch from master (idempotent)
         if: steps.label_check.outputs.has_label == 'true'
         run: |
+          set -euo pipefail
+
           ISSUE_NUMBER='${{ github.event.issue.number }}'
           ISSUE_TITLE='${{ github.event.issue.title }}'
 
-          # Slugify: ascii, lowercase, keep a-z0-9, collapse non-matches to '-', trim edges
           SLUG=$(printf "%s" "$ISSUE_TITLE" \
             | iconv -t ascii//TRANSLIT 2>/dev/null \
             | tr '[:upper:]' '[:lower:]' \
             | tr -cs 'a-z0-9' '-' \
             | sed 's/^-//;s/-$//')
-          # keep it reasonably short
           SLUG=${SLUG:0:50}
 
           BRANCH_NAME="dev/${ISSUE_NUMBER}-${SLUG}"
@@ -64,17 +64,21 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Ensure we have the latest master
-          git fetch origin master:origin/master
+          # Make sure we have the tracking ref for master without creating local branches
+          git fetch --prune origin
 
-          # Skip if branch already exists remotely
+          # Skip if branch already exists on origin
           if git ls-remote --exit-code --heads origin "$BRANCH_NAME" >/dev/null 2>&1; then
             echo "Branch '$BRANCH_NAME' already exists on origin. Nothing to do."
             exit 0
           fi
 
-          # Create from origin/master and push
+          # Create from the remote-tracking branch
           git checkout -b "$BRANCH_NAME" origin/master
+          git push -u origin "$BRANCH_NAME"
+
+          echo "Created branch: $BRANCH_NAME"
+
           git push -u origin "$BRANCH_NAME"
 
           echo "Created branch: $BRANCH_NAME"
