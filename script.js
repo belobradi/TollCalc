@@ -49,11 +49,11 @@ function makeLabelMarker (point, extraClass) {
 
 // --- Section logic ---
 function sectionTraversed (routeCoords, p1, p2, tolMeters = 50) {
-  let seen1 = false,
-    seen2 = false
+  let seen1 = false
+  let seen2 = false
   for (const [lat, lon] of routeCoords) {
-    let d1 = haversineMeters([lat, lon], [p1.lat, p1.lon])
-    let d2 = haversineMeters([lat, lon], [p2.lat, p2.lon])
+    const d1 = haversineMeters([lat, lon], [p1.lat, p1.lon])
+    const d2 = haversineMeters([lat, lon], [p2.lat, p2.lon])
     if (!seen1 && d1 <= tolMeters) {
       seen1 = true
     }
@@ -83,12 +83,9 @@ function computeSectionCharges (routeCoords) {
 }
 
 function chooseHwsection (enter, exit) {
-  const a = enter?.hwsection || null
-  const b = exit?.hwsection || null
-  if (a === b && a !== null) {
-    return a
-  }
-  return null
+  const a = enter?.hwsection ?? null
+  const b = exit?.hwsection ?? null
+  return a === b && a !== null ? a : null
 }
 
 async function computeRampCharges (ramps) {
@@ -138,7 +135,7 @@ async function startEndToRouteData (start, end) {
   const res = await fetch(url, { mode: 'cors' })
   if (!res.ok) throw new Error('OSRM response not OK')
 
-  let data = await res.json()
+  const data = await res.json()
   if (!data.routes || !data.routes[0]) throw new Error('No route found')
 
   const route = data.routes[0]
@@ -147,7 +144,6 @@ async function startEndToRouteData (start, end) {
 
 function densifyRoute (coords, stepMeters = 100) {
   const result = []
-  let accumulated = 0
 
   for (let i = 0; i < coords.length - 1; i++) {
     const [lat1, lon1] = coords[i]
@@ -185,7 +181,7 @@ async function drawRoute (a, b) {
     // UI updates
     updateDistance((distance / 1000).toFixed(1) + ' km')
 
-    ramps = computeRamps(coords)
+    const ramps = computeRamps(coords)
     renderRampsOnMap(ramps)
 
     let charges
