@@ -265,13 +265,12 @@ function reset () {
 
   navStartMarker = navEndMarker = null
 
-  clearRoute()
-
   setAddressField('startAddress', '')
   setAddressField('endAddress', '')
 
   document.querySelector('.pills').style.display = 'none'
   showMessage('')
+  clearRoute()
 }
 
 function clearRoute () {
@@ -383,7 +382,7 @@ function init () {
 // --- Entry point ---
 async function enter () {
   try {
-    STATIONS = await (await fetch('stations.json')).json()
+    STATIONS = await (await fetch('dev/json/stations.json')).json()
     await Matrix.initAll()
     init()
   } catch (err) {

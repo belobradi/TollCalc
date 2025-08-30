@@ -3,10 +3,10 @@
 const Matrix = (() => {
   // ---- Configure your files here (name -> relative path) ----
   const REGISTRY = {
-    A1S: 'data/A1S.csv',
-    A2: 'data/A2.csv',
-    A3_A8: 'data/A3_A8.csv',
-    A1J_A5_A4: 'data/A1J_A5_A4.csv'
+    A1S: 'data/csv/A1S.csv',
+    A2: 'data/csv/A2.csv',
+    A3_A8: 'data/csv/A3_A8.csv',
+    A1J_A5_A4: 'data/csv/A1J_A5_A4.csv'
   }
 
   // name -> { labels: string[], grid: Map(exit -> Map(entry -> number|null)) }
