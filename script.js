@@ -265,13 +265,12 @@ function reset () {
 
   navStartMarker = navEndMarker = null
 
-  clearRoute()
-
   setAddressField('startAddress', '')
   setAddressField('endAddress', '')
 
   document.querySelector('.pills').style.display = 'none'
   showMessage('')
+  clearRoute()
 }
 
 function clearRoute () {
