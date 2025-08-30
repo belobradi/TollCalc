@@ -383,7 +383,7 @@ function init () {
 // --- Entry point ---
 async function enter () {
   try {
-    STATIONS = await (await fetch('stations.json')).json()
+    STATIONS = await (await fetch('dev/json/stations.json')).json()
     await Matrix.initAll()
     init()
   } catch (err) {
