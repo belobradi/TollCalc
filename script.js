@@ -6,21 +6,41 @@ function toRad (deg) {
 }
 
 // --- Data ---
-let SECTIONS = []
 let STATIONS = []
-let rampBasedPricing = true // toggle this to switch pricing mode
 
 // --- State ---
-let start = null
-let end = null
-let startMarker = null
-let endMarker = null
-let entryMarker = null
-let exitMarker = null
-let routeLayer = null
 let map = null
+let navStart = null
+let navEnd = null
+let navStartMarker = null
+let navEndMarker = null
+let navRouteLayer = null
+let tollStationMarkers = []
 
-// --- Utility: Distance (Haversine formula) ---
+// --- UI helpers ---
+function makeLabelMarker (point, extraClass) {
+  return L.marker([point.lat, point.lon], {
+    icon: L.divIcon({
+      className: `toll-label ${extraClass || ''}`,
+      html: `<span class="toll-dot"></span><span class="toll-text">${point.name ?? 'Ramp'}</span>`,
+      iconAnchor: [0, 0]
+    })
+  })
+}
+function setAddressField (id, text) {
+  const el = document.getElementById(id)
+  if (el) el.value = text || ''
+}
+function updateDistance (t) {
+  document.getElementById('distance').textContent = 'Kilometraža: ' + t
+}
+function updatePrice (t) {
+  document.getElementById('price').textContent = 'Okvirna cena: ' + t
+}
+function showMessage (t) {
+  document.getElementById('msg').textContent = t
+}
+
 function haversineMeters (p1, p2) {
   const [lat1, lon1] = p1
   const [lat2, lon2] = p2
@@ -36,95 +56,61 @@ function haversineMeters (p1, p2) {
   return EARTH_RADIUS_M * c
 }
 
-// --- Utility: Station marker with label ---
-function makeLabelMarker (point, extraClass) {
-  return L.marker([point.lat, point.lon], {
-    icon: L.divIcon({
-      className: `toll-label ${extraClass || ''}`,
-      html: `<span class="toll-dot"></span><span class="toll-text">${point.name ?? 'Ramp'}</span>`,
-      iconAnchor: [0, 0]
-    })
-  })
-}
-
-// --- Section logic ---
-function sectionTraversed (routeCoords, p1, p2, tolMeters = 50) {
-  let seen1 = false
-  let seen2 = false
-  for (const [lat, lon] of routeCoords) {
-    const d1 = haversineMeters([lat, lon], [p1.lat, p1.lon])
-    const d2 = haversineMeters([lat, lon], [p2.lat, p2.lon])
-    if (!seen1 && d1 <= tolMeters) {
-      seen1 = true
-    }
-    if (!seen2 && d2 <= tolMeters) {
-      seen2 = true
-    }
-  }
-  return seen1 && seen2
-}
-
-function computeSectionCharges (routeCoords) {
+async function computeRampCharges (sections) {
+  let total = 0
   const items = []
 
-  for (const s of SECTIONS) {
-    if (sectionTraversed(routeCoords, s.p1, s.p2)) {
-      items.push({
-        corridor: s.corridor,
-        from: s.p1.name,
-        to: s.p2.name,
-        price_rsd: s.price_rsd
-      })
-    }
+  for (const s of sections) {
+    const corridor = s.hwsection
+    const price = corridor ? await Matrix.get(corridor, s.enter, s.exit) : 0
+    items.push({
+      corridor,
+      from: s.enter,
+      to: s.exit,
+      price_rsd: price
+    })
+    total += price
   }
 
-  const total = items.reduce((sum, it) => sum + it.price_rsd, 0)
-  return { total, items }
-}
-
-function chooseHwsection (enter, exit) {
-  const a = enter?.hwsection ?? null
-  const b = exit?.hwsection ?? null
-  return a === b && a !== null ? a : null
-}
-
-async function computeRampCharges (ramps) {
-  if (!ramps?.enter || !ramps?.exit) {
-    return { corridor: null, from: null, to: null, price_rsd: 0 }
-  }
-  const corridor = chooseHwsection(ramps.enter, ramps.exit)
-  const price = corridor ? await Matrix.get(corridor, ramps.enter, ramps.exit) : null
   return {
-    corridor,
-    from: ramps.enter,
-    to: ramps.exit,
-    price_rsd: price ?? 0
+    price_rsd: total,
+    items
   }
 }
 
-// --- Station logic ---
-function stationPassed (routeCoords, station, tolMeters = 30) {
+function stationPassed (routeCoords, station, tolMeters = 50) {
   return routeCoords.some(([lat, lon]) => haversineMeters([lat, lon], [station.lat, station.lon]) <= tolMeters)
 }
 
 function computeRamps (routeCoords) {
-  const passed = STATIONS.filter(st => stationPassed(routeCoords, st))
-  const enter = passed[0]
-  const exit = passed[passed.length - 1]
-  return {
-    enter,
-    exit
+  const grouped = new Map()
+  for (const st of STATIONS.filter(st => stationPassed(routeCoords, st))) {
+    if (grouped.has(st.hwsection) === false) {
+      grouped.set(st.hwsection, [])
+    }
+    grouped.get(st.hwsection).push(st)
   }
+
+  const sections = []
+  for (const [hwsection, stationData] of grouped) {
+    const first = stationData[0] // first station
+    const last = stationData[stationData.length - 1] // last station
+    console.log('section:', hwsection, 'enter:', first.name, 'exit:', last.name)
+    sections.push({ hwsection, enter: first, exit: last })
+  }
+
+  return sections
 }
 
-function renderRampsOnMap (ramps) {
-  if (!ramps) return
-
-  if (ramps.enter) {
-    entryMarker = makeLabelMarker(ramps.enter, 'enter').addTo(map)
-  }
-  if (ramps.exit) {
-    exitMarker = makeLabelMarker(ramps.exit, 'exit').addTo(map)
+function renderSectionRampsOnMap (sections) {
+  if (!sections) return
+  for (const section of sections) {
+    if (section.enter) {
+      tollStationMarkers.push(makeLabelMarker(section.enter, 'enter').addTo(map))
+    }
+    if (section.exit) {
+      tollStationMarkers.push(makeLabelMarker(section.exit, 'exit').addTo(map))
+    }
   }
 }
 
@@ -168,32 +154,24 @@ function densifyRoute (coords, stepMeters = 100) {
 }
 
 // --- Routing logic ---
-async function drawRoute (a, b) {
+async function drawRoute (start, end) {
   showMessage('Tražim putanju...')
   try {
-    let [distance, coords] = await startEndToRouteData(a, b)
-    coords = densifyRoute(coords, 20)
+    let [distance, coords] = await startEndToRouteData(start, end)
+    coords = densifyRoute(coords, 10)
 
-    if (routeLayer) map.removeLayer(routeLayer)
-    routeLayer = L.polyline(coords, { weight: 5 }).addTo(map)
-    map.fitBounds(routeLayer.getBounds(), { padding: [30, 30] })
+    clearRoute()
+    navRouteLayer = L.polyline(coords, { weight: 5 }).addTo(map)
+    map.fitBounds(navRouteLayer.getBounds(), { padding: [30, 30] })
 
-    // UI updates
     updateDistance((distance / 1000).toFixed(1) + ' km')
 
-    const ramps = computeRamps(coords)
-    renderRampsOnMap(ramps)
+    const sections = computeRamps(coords)
+    renderSectionRampsOnMap(sections)
 
-    let charges
-    if (rampBasedPricing) {
-      charges = await computeRampCharges(ramps)
-      updatePrice((charges.price_rsd ?? 0) + ' RSD')
-      console.log('Charged (ramp):', charges.price_rsd)
-    } else {
-      charges = computeSectionCharges(coords)
-      updatePrice((charges.total ?? 0) + ' RSD')
-      console.log('Charged (sections):', charges.items)
-    }
+    const charges = await computeRampCharges(sections)
+    updatePrice((charges.price_rsd ?? 0) + ' RSD')
+    console.log('Charged (ramp):', charges.price_rsd)
 
     document.querySelector('.pills').style.display = 'flex'
     showMessage('')
@@ -250,47 +228,44 @@ async function reverseToShortAddress ([lat, lon]) {
 async function onMapClick (e) {
   const pos = [e.latlng.lat, e.latlng.lng]
 
-  if (!start) {
-    start = pos
-    startMarker = L.marker(pos).addTo(map).bindTooltip('Start').openTooltip()
+  if (!navStart) {
+    navStart = pos
+    navStartMarker = L.marker(pos).addTo(map).bindTooltip('Start').openTooltip()
     showMessage('')
 
     // fill startAddress
     try {
-      const shortAddr = await reverseToShortAddress(start)
+      const shortAddr = await reverseToShortAddress(navStart)
       setAddressField('startAddress', shortAddr)
     } catch {
-      setAddressField('startAddress', `${start[0].toFixed(5)}, ${start[1].toFixed(5)}`)
+      setAddressField('startAddress', `${navStart[0].toFixed(5)}, ${navStart[1].toFixed(5)}`)
     }
-  } else if (!end) {
-    end = pos
-    endMarker = L.marker(pos).addTo(map).bindTooltip('Destinacija').openTooltip()
+  } else if (!navEnd) {
+    navEnd = pos
+    navEndMarker = L.marker(pos).addTo(map).bindTooltip('Destinacija').openTooltip()
 
     // fill endAddress
     try {
-      const shortAddr = await reverseToShortAddress(end)
+      const shortAddr = await reverseToShortAddress(navEnd)
       setAddressField('endAddress', shortAddr)
     } catch {
-      setAddressField('endAddress', `${end[0].toFixed(5)}, ${end[1].toFixed(5)}`)
+      setAddressField('endAddress', `${navEnd[0].toFixed(5)}, ${navEnd[1].toFixed(5)}`)
     }
-    await drawRoute(start, end)
+    await drawRoute(navStart, navEnd)
   } else {
     reset()
   }
 }
 
-function setAddressField (id, text) {
-  const el = document.getElementById(id)
-  if (el) el.value = text || ''
-}
-
 function reset () {
-  start = end = null
-  ;[routeLayer, startMarker, endMarker, entryMarker, exitMarker].forEach(m => {
+  navStart = navEnd = null
+  ;[navStartMarker, navEndMarker].forEach(m => {
     if (m) map.removeLayer(m)
   })
 
-  routeLayer = startMarker = endMarker = entryMarker = exitMarker = null
+  navStartMarker = navEndMarker = null
+
+  clearRoute()
 
   setAddressField('startAddress', '')
   setAddressField('endAddress', '')
@@ -299,57 +274,42 @@ function reset () {
   showMessage('')
 }
 
-// --- UI helpers ---
-function updateDistance (t) {
-  document.getElementById('distance').textContent = 'Kilometraža: ' + t
-}
-function updatePrice (t) {
-  document.getElementById('price').textContent = 'Okvirna cena: ' + t
-}
-function showMessage (t) {
-  document.getElementById('msg').textContent = t
+function clearRoute () {
+  // remove route line
+  if (navRouteLayer) {
+    map.removeLayer(navRouteLayer)
+    navRouteLayer = null
+  }
+
+  // remove toll markers
+  if (tollStationMarkers.length === 0) return
+  for (const m of tollStationMarkers) {
+    if (m) map.removeLayer(m)
+  }
+  tollStationMarkers = []
 }
 
 function clearSide (which) {
   if (which === 'start') {
-    start = null
-    if (startMarker) {
-      map.removeLayer(startMarker)
-      startMarker = null
-    }
-    if (entryMarker) {
-      map.removeLayer(entryMarker)
-      entryMarker = null
-    }
-    if (exitMarker) {
-      map.removeLayer(exitMarker)
-      exitMarker = null
+    navStart = null
+    if (navStartMarker) {
+      map.removeLayer(navStartMarker)
+      navStartMarker = null
     }
   } else {
-    end = null
-    if (endMarker) {
-      map.removeLayer(endMarker)
-      endMarker = null
-    }
-    if (entryMarker) {
-      map.removeLayer(entryMarker)
-      entryMarker = null
-    }
-    if (exitMarker) {
-      map.removeLayer(exitMarker)
-      exitMarker = null
+    navEnd = null
+    if (navEndMarker) {
+      map.removeLayer(navEndMarker)
+      navEndMarker = null
     }
   }
 
   // If either side is missing, the route is invalid → clear it & UI
-  if (routeLayer) {
-    map.removeLayer(routeLayer)
-    routeLayer = null
-  }
   document.querySelector('.pills').style.display = 'none'
   updateDistance('')
   updatePrice('')
   showMessage('')
+  clearRoute()
 }
 
 // --- Initialization ---
@@ -393,53 +353,29 @@ function init () {
     labelFn,
 
     onStartPick: ({ lat, lon, label }) => {
-      if (startMarker) {
-        map.removeLayer(startMarker)
-        startMarker = null
-      }
-      if (entryMarker) {
-        map.removeLayer(entryMarker)
-        entryMarker = null
-      }
-      if (exitMarker) {
-        map.removeLayer(exitMarker)
-        exitMarker = null
-      }
-      if (routeLayer) {
-        map.removeLayer(routeLayer)
-        routeLayer = null
+      if (navStartMarker) {
+        map.removeLayer(navStartMarker)
+        navStartMarker = null
       }
 
-      start = [lat, lon]
-      startMarker = L.marker(start).addTo(map).bindTooltip('Start').openTooltip()
+      navStart = [lat, lon]
+      navStartMarker = L.marker(navStart).addTo(map).bindTooltip('Start').openTooltip()
       const s = document.getElementById('startAddress')
       if (s) s.value = label
-      if (end) drawRoute(start, end)
+      if (navEnd) drawRoute(navStart, navEnd)
     },
 
     onEndPick: ({ lat, lon, label }) => {
-      if (endMarker) {
-        map.removeLayer(endMarker)
-        endMarker = null
-      }
-      if (entryMarker) {
-        map.removeLayer(entryMarker)
-        entryMarker = null
-      }
-      if (exitMarker) {
-        map.removeLayer(exitMarker)
-        exitMarker = null
-      }
-      if (routeLayer) {
-        map.removeLayer(routeLayer)
-        routeLayer = null
+      if (navEndMarker) {
+        map.removeLayer(navEndMarker)
+        navEndMarker = null
       }
 
-      end = [lat, lon]
-      endMarker = L.marker(end).addTo(map).bindTooltip('Destinacija').openTooltip()
+      navEnd = [lat, lon]
+      navEndMarker = L.marker(navEnd).addTo(map).bindTooltip('Destinacija').openTooltip()
       const e = document.getElementById('endAddress')
       if (e) e.value = label
-      if (start) drawRoute(start, end)
+      if (navStart) drawRoute(navStart, navEnd)
     }
   })
 }
@@ -447,7 +383,6 @@ function init () {
 // --- Entry point ---
 async function enter () {
   try {
-    SECTIONS = await (await fetch('sections.json')).json()
     STATIONS = await (await fetch('stations.json')).json()
     await Matrix.initAll()
     init()
