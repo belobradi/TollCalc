@@ -17,12 +17,268 @@ let navEndMarker = null
 let navRouteLayer = null
 let tollStationMarkers = []
 
+// --- Locale/i18n (lightweight) ---
+const LOCALE_LANGUAGE = 'tollcalc.language'
+const LOCALES = {
+  'sr-Latn': {
+    CHOOSE_START_ADDRESS: 'Odaberite adresu polaska',
+    CHOOSE_DESTINATION: 'Odaberite destinaciju',
+    VEHICLE_CATEGORY: 'Kategorija vozila',
+    K1_CAR: 'K1 (Automobil)',
+    RESET: 'Poništi',
+    DISTANCE: 'Kilometraža',
+    ESTIMATED_PRICE: 'Okvirna cena',
+    START: 'Start',
+    DESTINATION: 'Destinacija',
+    FINDING_ROUTE: 'Tražim putanju',
+    ROUTING_FAILED: 'Rutiranje nije uspelo (mreža/OSRM).',
+    KM: 'km',
+    RSD: 'din',
+    acceptLang: 'sr,en;q=0.8',
+    htmlLang: 'sr'
+  },
+  'sr-Cyrl': {
+    CHOOSE_START_ADDRESS: 'Одаберите адресу поласка',
+    CHOOSE_DESTINATION: 'Одаберите дестинацију',
+    VEHICLE_CATEGORY: 'Категорија возила',
+    K1_CAR: 'K1 (Аутомобил)',
+    RESET: 'Поништи',
+    DISTANCE: 'Километража',
+    ESTIMATED_PRICE: 'Оквирна цена',
+    START: 'Старт',
+    DESTINATION: 'Дестинација',
+    FINDING_ROUTE: 'Тражим путању',
+    ROUTING_FAILED: 'Рутирање није успело (мрежа/OSRM).',
+    KM: 'км',
+    RSD: 'дин',
+    acceptLang: 'sr,en;q=0.8',
+    htmlLang: 'sr'
+  },
+  en: {
+    CHOOSE_START_ADDRESS: 'Choose start address',
+    CHOOSE_DESTINATION: 'Choose destination',
+    VEHICLE_CATEGORY: 'Vehicle category',
+    K1_CAR: 'K1 (Car)',
+    RESET: 'Reset',
+    DISTANCE: 'Distance',
+    ESTIMATED_PRICE: 'Estimated price',
+    START: 'Start',
+    DESTINATION: 'Destination',
+    FINDING_ROUTE: 'Finding route',
+    ROUTING_FAILED: 'Routing failed (network/OSRM).',
+    KM: 'km',
+    RSD: 'RSD',
+    acceptLang: 'en,sr;q=0.8',
+    htmlLang: 'en'
+  }
+}
+
+// --- Station labels (i18n) ---
+const STATION_OVERRIDES_CYRL = {
+  SUBOTICA: 'Суботица',
+  ZEDNIK: 'Жедник',
+  BACKA_TOPOLA: 'Бачка Топола',
+  FEKETIC: 'Фекетић',
+  VRBAS: 'Врбас',
+  ZMAJEVO: 'Змајево',
+  NOVI_SAD: 'Нови Сад',
+  KOVILJ: 'Ковиљ',
+  BESKA: 'Бешка',
+  MEDERIK: 'Медерик',
+  INDJIJA: 'Инђија',
+  STARA_PAZOVA: 'Стара Пазова',
+  SIMANOVCI: 'Шимановци',
+  PECINCI: 'Пећинци',
+  RUMA: 'Рума',
+  SREMSKA_MITROVICA: 'Сремска Митровица',
+  KUZMIN: 'Кузмин',
+  ADASEVCI: 'Адашевци',
+  SID: 'Шид',
+  HRTKOVCI: 'Хртковци',
+  SABAC: 'Шабац',
+  OBRENOVAC: 'Обреновац',
+  UB: 'Уб',
+  LAJKOVAC: 'Лајковац',
+  LJIG: 'Љиг',
+  TAKOVO: 'Таково',
+  PRELJINA: 'Прељина',
+  PAKOVRACE: 'Паковраће',
+  LUCANI: 'Лучани',
+  PRILIPAC: 'Прилипац',
+  BEOGRAD: 'Београд',
+  MALI_POZAREVAC: 'Мали Пожаревац',
+  UMCARI: 'Умчари',
+  VODANJ: 'Водањ',
+  KOLARI: 'Колари',
+  SMEDEREVO: 'Смедерево',
+  POZAREVAC: 'Пожаревац',
+  VELIKA_PLANA: 'Велика Плана',
+  MARKOVAC: 'Марковац',
+  LAPOVO: 'Лапово',
+  BATOCINA: 'Баточина',
+  JAGODINA: 'Јагодина',
+  CUPRIJA: 'Ћуприја',
+  PARACIN: 'Параћин',
+  RAZANJ: 'Ражањ',
+  ALEKS_RUDNICI: 'Алексиначки Рудници',
+  ALEKSINAC: 'Алексинац',
+  MEROSINA: 'Мерошина',
+  DOLJEVAC: 'Дољевац',
+  BRESTOVAC: 'Брестовац',
+  GRDELICA: 'Грделица',
+  PREDEJANE: 'Предејане',
+  VLADUCIN_HAN: 'Владичин Хан',
+  VRANJE: 'Врање',
+  PRESEVO: 'Прешево',
+  CICEVAC: 'Ћићевац',
+  VELIKA_DRENOVA: 'Велика Дренова',
+  TRSTENIK: 'Трстеник',
+  VRNJACKA_BANJA: 'Врњачка Бања',
+  BELA_PALANKA: 'Бела Паланка',
+  DIMITROVGRAD: 'Димитровград',
+  NIS_JUG: 'Ниш југ',
+  NIS_SEVER: 'Ниш север',
+  NIS_ISTOK: 'Ниш исток',
+  NIS_MALCA: 'Ниш Малча',
+  LESKOVAC_CENTAR: 'Лесковац центар',
+  LESKOVAC_JUG: 'Лесковац југ',
+  BUJANOVAC_SEVER: 'Бујановац север',
+  BUJANOVAC_JUG: 'Бујановац југ',
+  KRUSEVAC_ISTOK: 'Крушевац исток',
+  KRUSEVAC_ZAPAD: 'Крушевац запад',
+  PIROT_ZAPAD: 'Пирот запад',
+  PIROT_ISTOK: 'Пирот исток'
+}
+
+function titleCaseKey (key) {
+  return String(key || '')
+    .toLowerCase()
+    .split('_')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ')
+}
+
+const EN_OVERRIDES = { BEOGRAD: 'Belgrade' }
+function stripDiacritics (s) {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
+function cyrlToLatn (s) {
+  const map = {
+    А: 'A',
+    Б: 'B',
+    В: 'V',
+    Г: 'G',
+    Д: 'D',
+    Ђ: 'Đ',
+    Е: 'E',
+    Ж: 'Ž',
+    З: 'Z',
+    И: 'I',
+    Ј: 'J',
+    К: 'K',
+    Л: 'L',
+    Љ: 'Lj',
+    М: 'M',
+    Н: 'N',
+    Њ: 'Nj',
+    О: 'O',
+    П: 'P',
+    Р: 'R',
+    С: 'S',
+    Т: 'T',
+    Ћ: 'Ć',
+    У: 'U',
+    Ф: 'F',
+    Х: 'H',
+    Ц: 'C',
+    Ч: 'Č',
+    Џ: 'Dž',
+    Ш: 'Š',
+    а: 'a',
+    б: 'b',
+    в: 'v',
+    г: 'g',
+    д: 'd',
+    ђ: 'đ',
+    е: 'e',
+    ж: 'ž',
+    з: 'z',
+    и: 'i',
+    ј: 'j',
+    к: 'k',
+    л: 'l',
+    љ: 'lj',
+    м: 'm',
+    н: 'n',
+    њ: 'nj',
+    о: 'o',
+    п: 'p',
+    р: 'r',
+    с: 's',
+    т: 't',
+    ћ: 'ć',
+    у: 'u',
+    ф: 'f',
+    х: 'h',
+    ц: 'c',
+    ч: 'č',
+    џ: 'dž',
+    ш: 'š'
+  }
+  return Array.from(s)
+    .map(ch => map[ch] ?? ch)
+    .join('')
+}
+
+function stationLabelFromKey (key, lang) {
+  const cyrl = STATION_OVERRIDES_CYRL[key] || titleCaseKey(key)
+
+  if (lang === 'sr-Cyrl') return cyrl
+
+  const latn = cyrlToLatn(cyrl)
+  if (lang === 'en') return EN_OVERRIDES[key] || stripDiacritics(latn)
+
+  return latn
+}
+
+let appLanguage = localStorage.getItem(LOCALE_LANGUAGE) || 'sr-Latn'
+
+function nls () {
+  return LOCALES[appLanguage] || LOCALES['sr-Latn']
+}
+
+function setLocale (loc) {
+  appLanguage = LOCALES[loc] ? loc : 'sr-Latn'
+  localStorage.setItem(LOCALE_LANGUAGE, appLanguage)
+  document.documentElement.setAttribute('lang', nls().htmlLang)
+  applyLocaleTexts()
+  reset()
+}
+
+function applyLocaleTexts () {
+  const s = document.getElementById('startAddress')
+  if (s) s.placeholder = nls().CHOOSE_START_ADDRESS
+  const e = document.getElementById('endAddress')
+  if (e) e.placeholder = nls().CHOOSE_DESTINATION
+
+  const vehLbl = document.querySelector('label[for="vehicleCategory"]')
+  if (vehLbl) vehLbl.textContent = nls().VEHICLE_CATEGORY
+  const optK1 = document.querySelector('#vehicleCategory option[value="k1"]')
+  if (optK1) optK1.textContent = nls().K1_CAR
+  const resetBtn = document.getElementById('resetBtn')
+  if (resetBtn) resetBtn.textContent = nls().RESET
+
+  document.documentElement.removeAttribute('data-i18n')
+}
+
 // --- UI helpers ---
 function makeLabelMarker (point, extraClass) {
+  const label = stationLabelFromKey(point.name, appLanguage)
   return L.marker([point.lat, point.lon], {
     icon: L.divIcon({
       className: `toll-label ${extraClass || ''}`,
-      html: `<span class="toll-dot"></span><span class="toll-text">${point.name ?? 'Ramp'}</span>`,
+      html: `<span class="toll-dot"></span><span class="toll-text">${label}</span>`,
       iconAnchor: [0, 0]
     })
   })
@@ -32,10 +288,10 @@ function setAddressField (id, text) {
   if (el) el.value = text || ''
 }
 function updateDistance (t) {
-  document.getElementById('distance').textContent = 'Kilometraža: ' + t
+  document.getElementById('distance').textContent = nls().DISTANCE + ': ' + t
 }
 function updatePrice (t) {
-  document.getElementById('price').textContent = 'Okvirna cena: ' + t
+  document.getElementById('price').textContent = nls().ESTIMATED_PRICE + ': ' + t
 }
 function showMessage (t) {
   document.getElementById('msg').textContent = t
@@ -148,14 +404,12 @@ function densifyRoute (coords, stepMeters = 100) {
     }
   }
 
-  // add last point
   result.push(coords[coords.length - 1])
   return result
 }
 
-// --- Routing logic ---
 async function drawRoute (start, end) {
-  showMessage('Tražim putanju...')
+  showMessage(nls().FINDING_ROUTE + '...')
   try {
     let [distance, coords] = await startEndToRouteData(start, end)
     coords = densifyRoute(coords, 10)
@@ -164,24 +418,23 @@ async function drawRoute (start, end) {
     navRouteLayer = L.polyline(coords, { weight: 5 }).addTo(map)
     map.fitBounds(navRouteLayer.getBounds(), { padding: [30, 30] })
 
-    updateDistance((distance / 1000).toFixed(1) + ' km')
+    updateDistance((distance / 1000).toFixed(1) + ' ' + nls().KM)
 
     const sections = computeRamps(coords)
     renderSectionRampsOnMap(sections)
 
     const charges = await computeRampCharges(sections)
-    updatePrice((charges.price_rsd ?? 0) + ' RSD')
+    updatePrice((charges.price_rsd ?? 0) + ' ' + nls().RSD)
     console.log('Charged (ramp):', charges.price_rsd)
 
     document.querySelector('.pills').style.display = 'flex'
     showMessage('')
   } catch (err) {
     console.error(err)
-    showMessage('Routing failed (network blocked or OSRM unavailable).')
+    showMessage(nls().ROUTING_FAILED)
   }
 }
 
-// --- Event handlers ---
 async function reverseGeocode ([lat, lon]) {
   const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`
   const res = await fetch(url, {
@@ -194,22 +447,18 @@ async function reverseGeocode ([lat, lon]) {
   return res.json()
 }
 
-// Pick the best street-ish and place-ish fields and format
 function formatAddressParts (addr) {
   if (!addr) return ''
 
-  // street candidates (ordered by “streetiness”)
   const street = addr.road || addr.pedestrian || addr.footway || addr.street || addr.path || addr.cycleway || ''
   const houseNo = addr.house_number ? ` ${addr.house_number}` : ''
 
-  // place (prefer city/town/village; fall back sanely)
   const place =
     addr.city || addr.town || addr.village || addr.hamlet || addr.municipality || addr.city_district || addr.suburb || addr.county || ''
 
   const postcode = addr.postcode || ''
   const country = addr.country || ''
 
-  // Build only the parts you want, skip empties
   const parts = []
   if (street) parts.push(street + houseNo)
   if (place) parts.push(place)
@@ -219,7 +468,6 @@ function formatAddressParts (addr) {
   return parts.join(', ')
 }
 
-// Convenience: reverse + format
 async function reverseToShortAddress ([lat, lon]) {
   const data = await reverseGeocode([lat, lon])
   return formatAddressParts(data.address) || data.display_name || `${lat.toFixed(5)}, ${lon.toFixed(5)}`
@@ -230,10 +478,9 @@ async function onMapClick (e) {
 
   if (!navStart) {
     navStart = pos
-    navStartMarker = L.marker(pos).addTo(map).bindTooltip('Start').openTooltip()
+    navStartMarker = L.marker(pos).addTo(map).bindTooltip(nls().START).openTooltip()
     showMessage('')
 
-    // fill startAddress
     try {
       const shortAddr = await reverseToShortAddress(navStart)
       setAddressField('startAddress', shortAddr)
@@ -242,9 +489,8 @@ async function onMapClick (e) {
     }
   } else if (!navEnd) {
     navEnd = pos
-    navEndMarker = L.marker(pos).addTo(map).bindTooltip('Destinacija').openTooltip()
+    navEndMarker = L.marker(pos).addTo(map).bindTooltip(nls().DESTINATION).openTooltip()
 
-    // fill endAddress
     try {
       const shortAddr = await reverseToShortAddress(navEnd)
       setAddressField('endAddress', shortAddr)
@@ -274,13 +520,11 @@ function reset () {
 }
 
 function clearRoute () {
-  // remove route line
   if (navRouteLayer) {
     map.removeLayer(navRouteLayer)
     navRouteLayer = null
   }
 
-  // remove toll markers
   if (tollStationMarkers.length === 0) return
   for (const m of tollStationMarkers) {
     if (m) map.removeLayer(m)
@@ -303,7 +547,6 @@ function clearSide (which) {
     }
   }
 
-  // If either side is missing, the route is invalid → clear it & UI
   document.querySelector('.pills').style.display = 'none'
   updateDistance('')
   updatePrice('')
@@ -313,6 +556,13 @@ function clearSide (which) {
 
 // --- Initialization ---
 function init () {
+  const langSelect = document.getElementById('langSelect')
+  if (langSelect) {
+    langSelect.value = appLanguage
+    langSelect.addEventListener('change', () => setLocale(langSelect.value))
+  }
+  applyLocaleTexts()
+
   map = L.map('map').setView([44.8, 20.5], 7)
 
   const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -351,6 +601,8 @@ function init () {
     },
     labelFn,
 
+    lang: nls().acceptLang,
+
     onStartPick: ({ lat, lon, label }) => {
       if (navStartMarker) {
         map.removeLayer(navStartMarker)
@@ -358,7 +610,7 @@ function init () {
       }
 
       navStart = [lat, lon]
-      navStartMarker = L.marker(navStart).addTo(map).bindTooltip('Start').openTooltip()
+      navStartMarker = L.marker(navStart).addTo(map).bindTooltip(nls().START).openTooltip()
       const s = document.getElementById('startAddress')
       if (s) s.value = label
       if (navEnd) drawRoute(navStart, navEnd)
@@ -371,7 +623,7 @@ function init () {
       }
 
       navEnd = [lat, lon]
-      navEndMarker = L.marker(navEnd).addTo(map).bindTooltip('Destinacija').openTooltip()
+      navEndMarker = L.marker(navEnd).addTo(map).bindTooltip(nls().DESTINATION).openTooltip()
       const e = document.getElementById('endAddress')
       if (e) e.value = label
       if (navStart) drawRoute(navStart, navEnd)
@@ -382,11 +634,11 @@ function init () {
 // --- Entry point ---
 async function enter () {
   try {
-    STATIONS = await (await fetch('dev/json/stations.json')).json()
+    STATIONS = await (await fetch('data/json/stations.json')).json()
     await Matrix.initAll()
     init()
   } catch (err) {
-    console.error('Failed to load sections/stations:', err)
+    console.error('Failed to load stations:', err)
   }
 }
 
