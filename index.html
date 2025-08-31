@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+(function () {
+  var LOC_KEY = 'tollcalc.language';
+  var loc = localStorage.getItem(LOC_KEY) || 'sr-Latn';
+  document.documentElement.setAttribute('lang', loc === 'en' ? 'en' : 'sr');
+  document.documentElement.setAttribute('data-i18n', 'pending');
+})();
+  </script>
   <meta charset="utf-8" />
   <title>Serbia Toll Demo — Map Route</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -21,15 +29,15 @@
 
       <!-- Vehicle type (visual only) -->
       <div class="field">
-        <label for="vehicleCategory">Kategorija vozila</label>
+        <label for="vehicleCategory">VEHICLE_CATEGORY</label>
         <select id="vehicleCategory" name="vehicleCategory" class="textlike">
-          <option value="k1">K1 (Automobil)</option>
+          <option value="k1">K1_CAR</option>
         </select>
       </div>
 
       <!-- Your live UI elements (kept same IDs so JS works) -->
       <div class="field" style="margin-top:8px; display:flex; gap:8px;">
-        <button id="resetBtn" class="btn" style="flex:1;">Poništi</button>
+        <button id="resetBtn" class="btn" style="flex:1;">RESET</button>
       </div>
       <div class="pills">
         <span id="distance" class="pill"></span>
@@ -42,6 +50,13 @@
 
     <!-- Right map -->
     <main class="map-wrap">
+      <div class="lang-menu">
+        <select id="langSelect" aria-label="Language">
+          <option value="sr-Latn">Srpski</option>
+          <option value="sr-Cyrl">Српски</option>
+          <option value="en">English</option>
+        </select>
+      </div>
       <div id="map"></div>
     </main>
   </div>
