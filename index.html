@@ -10,8 +10,22 @@
 })();
   </script>
   <meta charset="utf-8" />
-  <title>Serbia Toll Demo — Map Route</title>
+  <title>Kalkulator putarina u Srbiji</title>
+  <meta name="description" content="Izračunajte cenu autoputa, kilometražu i lokacije naplatnih rampi na mapi.">
+  <meta name="keywords" content="putarina, putarine, autoput, cena putarine, kalkulator putarine, mapa puteva, Srbija, Balkan, toll calculator, toll roads">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta property="og:title" content="Putarine - Kalkulator" />
+  <meta property="og:description" content="Izračunajte cenu putarine u Srbiji." />
+  <meta property="og:image" content="https://www.putarina.com/assets/preview.png" />
+  <meta property="og:url" content="https://www.putarina.com" />
+  <meta property="og:type" content="website" />
+
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/favicon-192.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="shortcut icon" href="assets/favicon.ico">
+
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -19,7 +33,7 @@
   <div class="app">
     <!-- Left controls -->
     <aside class="sidebar">
-      <!-- Start / End “search” boxes (purely visual; your JS still uses map clicks) -->
+      <!-- Start / End “search” boxes -->
       <div class="field">
         <input type="text" id="startAddress" name="address" class="textlike" placeholder="Odaberite adresu polaska">
       </div>
@@ -27,7 +41,7 @@
         <input type="text" id="endAddress" name="address" class="textlike" placeholder="Odaberite destinaciju">
       </div>
 
-      <!-- Vehicle type (visual only) -->
+      <!-- Vehicle type -->
       <div class="field">
         <label for="vehicleCategory">VEHICLE_CATEGORY</label>
         <select id="vehicleCategory" name="vehicleCategory" class="textlike">
@@ -35,7 +49,7 @@
         </select>
       </div>
 
-      <!-- Your live UI elements (kept same IDs so JS works) -->
+      <!-- Live UI elements -->
       <div class="field" style="margin-top:8px; display:flex; gap:8px;">
         <button id="resetBtn" class="btn" style="flex:1;">RESET</button>
       </div>
