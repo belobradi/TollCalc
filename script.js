@@ -556,6 +556,16 @@ function clearSide (which) {
 
 // --- Initialization ---
 function init () {
+  const toggleBtn = document.getElementById('toggleSidebarBtn')
+  if (toggleBtn) {
+    toggleBtn.onclick = () => {
+      document.body.classList.toggle('sidebar-collapsed')
+      toggleBtn.classList.toggle('collapsed')
+      // Invalidate map size after transition to re-render tiles correctly
+      setTimeout(() => map.invalidateSize(), 300)
+    }
+  }
+
   const langSelect = document.getElementById('langSelect')
   if (langSelect) {
     langSelect.value = appLanguage
@@ -563,7 +573,8 @@ function init () {
   }
   applyLocaleTexts()
 
-  map = L.map('map').setView([44.8, 20.5], 7)
+  map = L.map('map', { zoomControl: false }).setView([44.8, 20.5], 7)
+  L.control.zoom({ position: 'bottomright' }).addTo(map)
 
   const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
