@@ -557,10 +557,24 @@ function clearSide (which) {
 // --- Initialization ---
 function init () {
   const toggleBtn = document.getElementById('toggleSidebarBtn')
+  const pills = document.querySelector('.pills')
+  const sidebar = document.querySelector('.sidebar')
+  const mapWrap = document.querySelector('.map-wrap')
+
   if (toggleBtn) {
     toggleBtn.onclick = () => {
       document.body.classList.toggle('sidebar-collapsed')
       toggleBtn.classList.toggle('collapsed')
+
+      // Move the pills div based on sidebar state
+      if (document.body.classList.contains('sidebar-collapsed')) {
+        // Sidebar is collapsed, move pills to map-wrap
+        mapWrap.appendChild(pills)
+      } else {
+        // Sidebar is not collapsed, move pills to sidebar
+        sidebar.appendChild(pills)
+      }
+
       // Invalidate map size after transition to re-render tiles correctly
       setTimeout(() => map.invalidateSize(), 300)
     }
@@ -599,7 +613,9 @@ function init () {
   document.getElementById('resetBtn').onclick = reset
   map.on('click', onMapClick)
 
-  // Consistent label (same as reverse geocode)
+  const clearBtn = document.getElementById('clearBtn')
+  if (clearBtn) clearBtn.onclick = reset
+
   const labelFn = item =>
     typeof formatAddressParts === 'function' ? formatAddressParts(item.address) || item.display_name : item.display_name
 
@@ -611,28 +627,23 @@ function init () {
       return [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].join(',')
     },
     labelFn,
-
     lang: nls().acceptLang,
-
     onStartPick: ({ lat, lon, label }) => {
       if (navStartMarker) {
         map.removeLayer(navStartMarker)
         navStartMarker = null
       }
-
       navStart = [lat, lon]
       navStartMarker = L.marker(navStart).addTo(map).bindTooltip(nls().START).openTooltip()
       const s = document.getElementById('startAddress')
       if (s) s.value = label
       if (navEnd) drawRoute(navStart, navEnd)
     },
-
     onEndPick: ({ lat, lon, label }) => {
       if (navEndMarker) {
         map.removeLayer(navEndMarker)
         navEndMarker = null
       }
-
       navEnd = [lat, lon]
       navEndMarker = L.marker(navEnd).addTo(map).bindTooltip(nls().DESTINATION).openTooltip()
       const e = document.getElementById('endAddress')
