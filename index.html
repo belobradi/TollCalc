@@ -1,70 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <script>
-(function () {
-  var LOC_KEY = 'tollcalc.language';
-  var loc = localStorage.getItem(LOC_KEY) || 'sr-Latn';
-  document.documentElement.setAttribute('lang', loc === 'en' ? 'en' : 'sr');
-  document.documentElement.setAttribute('data-i18n', 'pending');
-})();
-  </script>
-  <meta charset="utf-8" />
-  <title>Serbia Toll Demo — Map Route</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <div class="app">
-    <!-- Left controls -->
-    <aside class="sidebar">
-      <!-- Start / End “search” boxes (purely visual; your JS still uses map clicks) -->
-      <div class="field">
-        <input type="text" id="startAddress" name="address" class="textlike" placeholder="Odaberite adresu polaska">
-      </div>
-      <div class="field">
-        <input type="text" id="endAddress" name="address" class="textlike" placeholder="Odaberite destinaciju">
-      </div>
+  <head>
+    <script>
+      ;(function () {
+        var LOC_KEY = 'tollcalc.language'
+        var loc = localStorage.getItem(LOC_KEY) || 'sr-Latn'
+        document.documentElement.setAttribute('lang', loc === 'en' ? 'en' : 'sr')
+        document.documentElement.setAttribute('data-i18n', 'pending')
+      })()
+    </script>
+    <meta charset="utf-8" />
+    <title>Kalkulator putarina u Srbiji</title>
+    <meta name="description" content="Izračunajte cenu autoputa, kilometražu i lokacije naplatnih rampi na mapi." />
+    <meta
+      name="keywords"
+      content="putarina, putarine, autoput, cena putarine, kalkulator putarine, mapa puteva, Srbija, Balkan, toll calculator, toll roads"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-      <!-- Vehicle type (visual only) -->
-      <div class="field">
-        <label for="vehicleCategory">VEHICLE_CATEGORY</label>
-        <select id="vehicleCategory" name="vehicleCategory" class="textlike">
-          <option value="k1">K1_CAR</option>
-        </select>
-      </div>
+    <meta property="og:title" content="Putarine - Kalkulator" />
+    <meta property="og:description" content="Izračunajte cenu putarine u Srbiji." />
+    <meta property="og:image" content="https://www.putarina.com/assets/preview.png" />
+    <meta property="og:url" content="https://www.putarina.com" />
+    <meta property="og:type" content="website" />
 
-      <!-- Your live UI elements (kept same IDs so JS works) -->
-      <div class="field" style="margin-top:8px; display:flex; gap:8px;">
-        <button id="resetBtn" class="btn" style="flex:1;">RESET</button>
-      </div>
-      <div class="pills">
-        <span id="distance" class="pill"></span>
-        <span id="price" class="pill"></span>
-      </div>
-      <div class="field">
-        <span id="msg" class="error"></span>
-      </div>
-    </aside>
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/favicon-192.png" />
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+    <link rel="shortcut icon" href="assets/favicon.ico" />
 
-    <!-- Right map -->
-    <main class="map-wrap">
-      <div class="lang-menu">
-        <select id="langSelect" aria-label="Language">
-          <option value="sr-Latn">Srpski</option>
-          <option value="sr-Cyrl">Српски</option>
-          <option value="en">English</option>
-        </select>
-      </div>
-      <div id="map"></div>
-    </main>
-  </div>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <!-- Left controls -->
+      <aside class="sidebar">
+        <!-- Start / End “search” boxes -->
+        <div class="field">
+          <input type="text" id="startAddress" name="address" class="textlike" placeholder="Odaberite adresu polaska" />
+        </div>
+        <div class="field">
+          <input type="text" id="endAddress" name="address" class="textlike" placeholder="Odaberite destinaciju" />
+        </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script src="matrix.js"></script>
-  <script src="search.js"></script>
-  <script src="script.js"></script>
-</body>
+        <!-- Vehicle type -->
+        <div class="field">
+          <label for="vehicleCategory">VEHICLE_CATEGORY</label>
+          <select id="vehicleCategory" name="vehicleCategory" class="textlike">
+            <option value="k1">K1_CAR</option>
+          </select>
+        </div>
+
+        <!-- Live UI elements -->
+        <div class="field" style="margin-top: 8px; display: flex; gap: 8px">
+          <button id="resetBtn" class="btn" style="flex: 1">RESET</button>
+        </div>
+
+        <div class="pills">
+          <span id="distance" class="pill"></span>
+          <span id="price" class="pill"></span>
+          <span class="pill" id="clearBtn" style="cursor: pointer; background: #fee2e2; color: #b91c1c">&times;</span>
+        </div>
+
+        <div class="field">
+          <span id="msg" class="error"></span>
+        </div>
+      </aside>
+
+      <!-- Right map -->
+      <main class="map-wrap">
+        <button id="toggleSidebarBtn" class="sidebar-toggle" aria-label="Toggle sidebar">&lt;</button>
+        <div class="lang-menu">
+          <select id="langSelect" aria-label="Language">
+            <option value="sr-Latn">Srpski</option>
+            <option value="sr-Cyrl">Српски</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+        <div id="map"></div>
+      </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="matrix.js"></script>
+    <script src="search.js"></script>
+    <script src="script.js"></script>
+  </body>
 </html>
