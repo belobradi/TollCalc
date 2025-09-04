@@ -8,17 +8,12 @@ html[data-i18n='pending'] {
   visibility: hidden;
 }
 
-/* make controls behave the same */
-.textlike,
-.btn {
-  display: block;
-  width: 100%;
-}
-
+/* Existing root variables */
 :root {
   --sidebar-w: 380px;
 }
 
+/* Mobile-first approach: Base styles for small screens */
 html,
 body {
   height: 100%;
@@ -26,6 +21,183 @@ body {
   font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 }
 
+.app {
+  display: flex;
+  flex-direction: column; /* Stack sidebar and map vertically on mobile */
+  height: 100%;
+}
+
+.pills {
+  display: none;
+}
+
+/* Hide everything INSIDE sidebar except the pills (override inline display) */
+body.sidebar-collapsed-mobile .sidebar > *:not(.pills) {
+  display: none !important;
+}
+
+.pill {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  display: inline-block;
+}
+
+.textlike {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.btn {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.sidebar {
+  padding: 16px;
+  border-right: none;
+  background: #fff;
+  overflow: auto;
+  width: 100%;
+}
+
+.sidebar #clearBtn {
+  display: none;
+}
+
+.map-wrap {
+  position: relative;
+  flex: 1;
+}
+
+#map {
+  position: absolute;
+  inset: 0;
+}
+
+/* Adjust input fields and buttons for mobile */
+.textlike,
+.btn {
+  width: 100%;
+  padding: 10px;
+}
+
+.field {
+  margin-bottom: 16px; /* More spacing */
+}
+
+/* Sidebar toggle styles */
+.sidebar-toggle::before {
+  content: '^';
+}
+
+.sidebar-toggle {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 48px;
+  height: 24px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-top: none;
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  z-index: 1001;
+  padding: 0;
+  font-size: 16px;
+  font-weight: bold;
+  transition: transform 0.3s ease;
+}
+
+.sidebar-toggle.collapsed {
+  transform: translateX(-50%) rotate(180deg);
+}
+
+/* When sidebar is collapsed on mobile, hide all sidebar content except pills */
+body.sidebar-collapsed-mobile .sidebar > *:not(.pills) {
+  display: none;
+}
+
+body.sidebar-collapsed-mobile #clearBtn {
+  display: block;
+}
+
+body.sidebar-collapsed-mobile.resetBtn { display: none; }
+
+/* Toll label styles */
+.toll-dot {
+  width: 8px;
+  height: 8px;
+  background: red;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 4px;
+} */
+
+.toll-text {
+  font-size: 12px;
+  background: white;
+  padding: 1px 3px;
+  border-radius: 3px;
+}
+
+.toll-label {
+  white-space: nowrap;
+}
+
+/* Search box drop down menu */
+.ac-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  overflow-y: auto;
+  display: none;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+  z-index: 9999;
+  max-height: 200px;
+  font-size: 14px;
+}
+
+.ac-item {
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.ac-item:hover,
+.ac-item.active {
+  background: #eef2ff;
+}
+
+.ac-muted {
+  color: #64748b;
+  font-size: 12px;
+}
+
+/* Error message styles */
+.error {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+/* Media query for tablet and desktop */
+@media (min-width: 768px) {
 .app {
   display: grid;
   grid-template-columns: var(--sidebar-w) 1fr;
@@ -66,127 +238,34 @@ body.sidebar-collapsed .sidebar {
   margin-bottom: 6px;
 }
 
-.textlike {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  background: #fff;
-}
-
-.btn {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 10px;
-  background: #fff;
-  cursor: pointer;
-}
-
-.btn.primary {
-  background: linear-gradient(180deg, #6fb7ff, #2f7df4);
-  border: none;
-  color: #fff;
-  font-weight: 600;
-}
-
-.btn.ghost {
-  background: #fff;
-}
-
-.field-actions {
-  margin-top: 8px;
-  display: flex;
-  gap: 8px;
-}
-
-.seg {
-  display: inline-flex;
-  border: 1px solid #cbd5e1;
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.seg button {
-  padding: 6px 12px;
-  border: 0;
-  background: #fff;
-  cursor: pointer;
-  min-width: 90px;
-}
-
-.seg button.active {
-  background: #4f46e5;
-  color: #fff;
-}
-
-.muted {
-  color: #64748b;
-  font-size: 12px;
-}
-
-.group {
-  padding: 10px 0;
-  border-top: 1px dashed #e5e7eb;
-  margin-top: 10px;
-}
-
 .map-wrap {
   position: relative;
 }
+
 #map {
   position: absolute;
   inset: 0;
 }
 
 .sidebar-toggle {
-  position: absolute;
   top: 50%;
   left: 0;
   transform: translateY(-50%);
   width: 24px;
   height: 48px;
-  background: #fff;
   border: 1px solid #e0e0e0;
   border-left: none;
   border-top-right-radius: 4px;
   border-bottom-right-radius: 4px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #666;
-  z-index: 1001;
-  padding: 0;
-  font-size: 16px;
-  font-weight: bold;
-  transition: transform 0.3s ease;
+  border-bottom-left-radius: 0;
 }
 
-body.sidebar-collapsed .sidebar-toggle {
-  border-left: 1px solid #e0e0e0;
-  border-top-left-radius: 4px;
-  border-bottom-left-radius: 4px;
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
+.sidebar-toggle::before {
+  content: '<';
 }
 
 .sidebar-toggle.collapsed {
   transform: translateY(-50%) rotate(180deg);
-}
-
-.sidebar .pills {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.map-wrap .pills {
-  display: none;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-  margin-bottom: 12px;
 }
 
 body.sidebar-collapsed .pills {
@@ -198,76 +277,7 @@ body.sidebar-collapsed .pills {
   margin-bottom: 0;
 }
 
-.sidebar #clearBtn {
-  display: none;
-}
-
-body.sidebar-collapsed #clearBtn {
-  cursor: pointer;
-  background: #fee2e2 !important; /* Light red background */
-  color: #b91c1c !important; /* Dark red X */
-  font-weight: bold;
-  padding: 6px 12px; /* Slightly wider for usability */
-}
-
-.pill {
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: #eef2ff;
-  display: inline-block;
-}
-
-.error {
-  color: #b91c1c;
-  font-weight: 600;
-}
-
-.toll-dot {
-  width: 8px;
-  height: 8px;
-  background: red;
-  border-radius: 50%;
-  display: inline-block;
-  margin-right: 4px;
-}
-.toll-text {
-  font-size: 12px;
-  background: white;
-  padding: 1px 3px;
-  border-radius: 3px;
-}
-
-.toll-label {
-  white-space: nowrap;
-}
-
-.ac-list {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: calc(100% + 4px);
-  background: #fff;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  max-height: 260px;
-  overflow-y: auto;
-  display: none;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
-  z-index: 9999;
-}
-.ac-item {
-  padding: 8px 10px;
-  cursor: pointer;
-}
-.ac-item:hover,
-.ac-item.active {
-  background: #eef2ff;
-}
-.ac-muted {
-  color: #64748b;
-  font-size: 12px;
-}
-
+/* Language selection menu */
 .lang-menu {
   position: absolute;
   top: 12px;
@@ -282,4 +292,12 @@ body.sidebar-collapsed #clearBtn {
   background: #fff;
   font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   cursor: pointer;
+}
+
+/* Search box drop down menu */
+.ac-list {
+  max-height: 260px;
+  font-size: 12px;
+}
+
 }

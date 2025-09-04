@@ -1,5 +1,6 @@
 // --- Constants & Helpers ---
 const EARTH_RADIUS_M = 6367e3
+const SMALL_SCREEN_LIMIT = 768 // px
 
 function toRad (deg) {
   return (deg * Math.PI) / 180.0
@@ -563,7 +564,12 @@ function init () {
 
   if (toggleBtn) {
     toggleBtn.onclick = () => {
-      document.body.classList.toggle('sidebar-collapsed')
+      const isMobile = window.innerWidth < SMALL_SCREEN_LIMIT
+      if (isMobile) {
+        document.body.classList.toggle('sidebar-collapsed-mobile')
+      } else {
+        document.body.classList.toggle('sidebar-collapsed')
+      }
       toggleBtn.classList.toggle('collapsed')
 
       // Move the pills div based on sidebar state
