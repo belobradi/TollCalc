@@ -7,7 +7,6 @@
 html[data-i18n='pending'] {
   visibility: hidden;
 }
-}
 
 /* Existing root variables */
 :root {
