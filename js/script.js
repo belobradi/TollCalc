@@ -1,3 +1,6 @@
+import { Matrix } from './matrix.js'
+import { init as initAddressSearch } from './search.js'
+
 // --- Constants & Helpers ---
 const EARTH_RADIUS_M = 6367e3
 const SMALL_SCREEN_LIMIT = 768 // px
@@ -625,14 +628,14 @@ function init () {
   const labelFn = item =>
     typeof formatAddressParts === 'function' ? formatAddressParts(item.address) || item.display_name : item.display_name
 
-  AddressSearch.init({
+  initAddressSearch({
     countrycodes: 'rs',
     bounded: false,
     getViewbox: () => {
       const b = map.getBounds()
       return [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].join(',')
     },
-    labelFn,
+    labelFn: item => (typeof formatAddressParts === 'function' ? formatAddressParts(item.address) || item.display_name : item.display_name),
     lang: nls().acceptLang,
     onStartPick: ({ lat, lon, label }) => {
       if (navStartMarker) {
