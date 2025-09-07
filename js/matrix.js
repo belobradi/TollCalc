@@ -1,4 +1,6 @@
 // matrix.js — load/query multiple square CSV matrices (first row = headers, no first column)
+import Papa from 'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/+esm'
+
 export const Matrix = (() => {
   // ---- Configure your files here (name -> relative path) ----
   const REGISTRY = {

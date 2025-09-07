@@ -142,7 +142,9 @@ export function init (options = {}) {
   let viewbox = null
   try {
     if (typeof options.getViewbox === 'function') viewbox = options.getViewbox()
-  } catch {}
+  } catch {
+    // intentionally empty: ignore errors from getViewbox
+  }
 
   const common = {
     countrycodes: options.countrycodes ?? 'rs',

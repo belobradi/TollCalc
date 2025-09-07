@@ -1,5 +1,6 @@
 import { Matrix } from './matrix.js'
 import { init as initAddressSearch } from './search.js'
+import L from 'https://esm.sh/leaflet@1.9.4'
 
 // --- Constants & Helpers ---
 const EARTH_RADIUS_M = 6367e3
@@ -624,9 +625,6 @@ function init () {
 
   const clearBtn = document.getElementById('clearBtn')
   if (clearBtn) clearBtn.onclick = reset
-
-  const labelFn = item =>
-    typeof formatAddressParts === 'function' ? formatAddressParts(item.address) || item.display_name : item.display_name
 
   initAddressSearch({
     countrycodes: 'rs',
