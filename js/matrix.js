@@ -1,6 +1,7 @@
 // matrix.js — load/query multiple square CSV matrices (first row = headers, no first column)
+import Papa from 'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/+esm'
 
-const Matrix = (() => {
+export const Matrix = (() => {
   // ---- Configure your files here (name -> relative path) ----
   const REGISTRY = {
     A1S: 'data/csv/A1S.csv',
@@ -9,7 +10,6 @@ const Matrix = (() => {
     A1J_A5_A4: 'data/csv/A1J_A5_A4.csv'
   }
 
-  // name -> { labels: string[], grid: Map(exit -> Map(entry -> number|null)) }
   const CACHE = new Map()
 
   const norm = s =>
@@ -33,11 +33,11 @@ const Matrix = (() => {
     const { data } = Papa.parse(text, { header: false, skipEmptyLines: true })
     if (!data?.length) return { labels: [], grid: new Map() }
 
-    const labels = data[0].map(norm) // entries & exits (same list)
+    const labels = data[0].map(norm)
     const grid = new Map()
 
     for (let r = 1; r < data.length; r++) {
-      const exitName = labels[r - 1] // row r corresponds to labels[r-1]
+      const exitName = labels[r - 1]
       if (!exitName) continue
 
       const rowArr = data[r]
@@ -61,22 +61,15 @@ const Matrix = (() => {
   }
 
   return {
-    // Preload all files (optional). Call once at startup.
     async initAll () {
       await Promise.all(Object.keys(REGISTRY).map(loadOne))
     },
-
-    // Preload only a subset (optional).
     async init (names) {
       await Promise.all(names.map(loadOne))
     },
-
-    // Lazy: ensure a table is ready; loads if missing.
     async ensure (name) {
       return loadOne(name)
     },
-
-    // Get price or null. Loads lazily if needed.
     async get (name, entry, exit) {
       const enterRamp = entry?.name ?? entry
       const exitRamp = exit?.name ?? exit
@@ -84,8 +77,6 @@ const Matrix = (() => {
       const row = t.grid.get(norm(exitRamp))
       return row ? row.get(norm(enterRamp)) ?? null : null
     },
-
-    // Introspection / UI helpers
     listTables () {
       return Object.keys(REGISTRY)
     },

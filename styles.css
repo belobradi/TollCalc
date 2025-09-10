@@ -4,16 +4,17 @@
   box-sizing: border-box;
 }
 
+/* i18n loading mask */
 html[data-i18n='pending'] {
   visibility: hidden;
 }
 
-/* Existing root variables */
+/* Root variables */
 :root {
   --sidebar-w: 380px;
 }
 
-/* Mobile-first approach: Base styles for small screens */
+/* Base */
 html,
 body {
   height: 100%;
@@ -21,69 +22,22 @@ body {
   font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 }
 
+/* App layout: mobile-first (column) */
 .app {
   display: flex;
-  flex-direction: column; /* Stack sidebar and map vertically on mobile */
+  flex-direction: column;
   height: 100%;
-  transition: grid-template-columns 0.3s ease;
 }
 
-body.sidebar-collapsed .app {
-  grid-template-columns: 0 1fr;
-}
-
-.pills {
-  display: none;
-  position: relative;
-  transition: padding 0.3s ease, opacity 0.3s ease;
-}
-
-body.sidebar-collapsed .sidebar {
-  padding: 0;
-  opacity: 0;
-}
-
-/* Hide everything INSIDE sidebar except the pills (override inline display) */
-body.sidebar-collapsed-mobile .sidebar > *:not(.pills) {
-  display: none !important;
-}
-
-.pill {
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: #eef2ff;
-  display: inline-block;
-}
-
-.textlike {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  background: #fff;
-}
-
-.btn {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 10px;
-  background: #fff;
-  cursor: pointer;
-}
-
+/* Sidebar */
 .sidebar {
   padding: 16px;
-  border-right: none;
   background: #fff;
   overflow: auto;
   width: 100%;
 }
 
-.sidebar #clearBtn {
-  display: none;
-}
-
+/* Map wrapper */
 .map-wrap {
   position: relative;
   flex: 1;
@@ -94,22 +48,77 @@ body.sidebar-collapsed-mobile .sidebar > *:not(.pills) {
   inset: 0;
 }
 
-/* Adjust input fields and buttons for mobile */
+/* Inputs & buttons */
 .textlike,
 .btn {
   width: 100%;
-  padding: 10px;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
 }
 
+.btn {
+  cursor: pointer;
+  border-radius: 10px; /* keep existing rounded look for buttons */
+}
+
+/* Fields */
 .field {
-  margin-bottom: 16px; /* More spacing */
+  margin-bottom: 10px;
 }
 
-/* Sidebar toggle styles */
-.sidebar-toggle::before {
-  content: '^';
+/* Pills */
+.pills {
+  display: none;           /* JS sets it to flex when route is ready */
+  position: relative;
+  transition: padding 0.3s ease, opacity 0.3s ease;
+  gap: 10px;
+  margin-top: 10px;
 }
 
+.pill {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  display: inline-block;
+}
+
+/* Clear (X) pill visibility logic:
+   Hidden inside the sidebar; visible when pills are moved out of the sidebar
+   (i.e., when desktop is collapsed). */
+.sidebar #clearBtn {
+  display: none;
+}
+
+body.sidebar-collapsed #clearBtn {
+  /* style remains when shown outside .sidebar (display controlled by DOM move) */
+  cursor: pointer;
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+  font-weight: bold;
+  padding: 6px 12px;
+}
+
+body.sidebar-collapsed-mobile .sidebar #clearBtn {
+  display: flex;
+}
+
+/* Mobile collapse: hide everything inside the sidebar except .pills */
+body.sidebar-collapsed-mobile .sidebar > *:not(.pills) {
+  display: none !important;
+}
+
+/* Desktop/mobile collapsed: float pills for visibility on the map area */
+body.sidebar-collapsed .pills {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  z-index: 1000;
+  margin: 0;
+}
+
+/* Toggle button (mobile defaults) */
 .sidebar-toggle {
   position: absolute;
   top: 0;
@@ -134,89 +143,15 @@ body.sidebar-collapsed-mobile .sidebar > *:not(.pills) {
   transition: transform 0.3s ease;
 }
 
+.sidebar-toggle::before {
+  content: '^';
+}
+
 .sidebar-toggle.collapsed {
   transform: translateX(-50%) rotate(180deg);
 }
-#map {
-  position: absolute;
-  inset: 0;
-}
 
-/* When sidebar is collapsed on mobile, hide all sidebar content except pills */
-body.sidebar-collapsed-mobile .sidebar > *:not(.pills) {
-  top: 50%;
-  left: 0;
-  transform: translateY(-50%);
-  width: 24px;
-  height: 48px;
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-left: none;
-  border-top-right-radius: 4px;
-  border-bottom-right-radius: 4px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #666;
-  z-index: 1001;
-  padding: 0;
-  font-size: 16px;
-  font-weight: bold;
-  transition: transform 0.3s ease;
-}
-
-body.sidebar-collapsed .sidebar-toggle {
-  border-left: 1px solid #e0e0e0;
-  border-top-left-radius: 4px;
-  border-bottom-left-radius: 4px;
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-}
-
-.sidebar-toggle.collapsed {
-  transform: translateY(-50%) rotate(180deg);
-}
-
-.sidebar .pills {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.map-wrap .pills {
-  display: none;
-  margin-bottom: 12px;
-}
-
-body.sidebar-collapsed .pills {
-  position: fixed;
-  bottom: 12px;
-  left: 12px;
-  z-index: 1000;
-  margin-top: 0;
-  margin-bottom: 0;
-}
-
-.sidebar #clearBtn {
-  display: none;
-}
-
-body.sidebar-collapsed #clearBtn {
-  cursor: pointer;
-  background: #fee2e2 !important; /* Light red background */
-  color: #b91c1c !important; /* Dark red X */
-  font-weight: bold;
-  padding: 6px 12px; /* Slightly wider for usability */
-}
-
-body.sidebar-collapsed-mobile #clearBtn {
-  display: block;
-}
-
-body.sidebar-collapsed-mobile.resetBtn { display: none; }
-
-/* Toll label styles */
+/* Toll labels */
 .toll-dot {
   width: 8px;
   height: 8px;
@@ -224,11 +159,11 @@ body.sidebar-collapsed-mobile.resetBtn { display: none; }
   border-radius: 50%;
   display: inline-block;
   margin-right: 4px;
-} */
+}
 
 .toll-text {
   font-size: 12px;
-  background: white;
+  background: #fff;
   padding: 1px 3px;
   border-radius: 3px;
 }
@@ -237,7 +172,7 @@ body.sidebar-collapsed-mobile.resetBtn { display: none; }
   white-space: nowrap;
 }
 
-/* Search box drop down menu */
+/* Autocomplete dropdown */
 .ac-list {
   position: absolute;
   left: 0;
@@ -269,114 +204,93 @@ body.sidebar-collapsed-mobile.resetBtn { display: none; }
   font-size: 12px;
 }
 
-/* Error message styles */
+/* Error text */
 .error {
   color: #b91c1c;
   font-weight: 600;
 }
 
-/* Media query for tablet and desktop */
+/* Tablet & desktop */
 @media (min-width: 768px) {
-.app {
-  display: grid;
-  grid-template-columns: var(--sidebar-w) 1fr;
-  height: 100%;
-  transition: grid-template-columns 0.3s ease;
-}
+  .app {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) 1fr;
+    height: 100%;
+    transition: grid-template-columns 0.3s ease;
+  }
 
-body.sidebar-collapsed .app {
-  grid-template-columns: 0 1fr;
-}
+  body.sidebar-collapsed .app {
+    grid-template-columns: 0 1fr;
+  }
 
-.sidebar {
-  padding: 16px;
-  border-right: 1px solid #e5e7eb;
-  background: #fff;
-  overflow: auto;
-  position: relative;
-  transition: padding 0.3s ease, opacity 0.3s ease;
-}
+  .sidebar {
+    border-right: 1px solid #e5e7eb;
+    position: relative;
+    transition: padding 0.3s ease, opacity 0.3s ease;
+  }
 
-body.sidebar-collapsed .sidebar {
-  padding: 0;
-  opacity: 0;
-}
+  body.sidebar-collapsed .sidebar {
+    padding: 0;
+    opacity: 0;
+  }
 
-.sidebar h1 {
-  font-size: 16px;
-  margin: 0 0 12px;
-}
+  .sidebar h1 {
+    font-size: 16px;
+    margin: 0 0 12px;
+  }
 
-.field {
-  margin-bottom: 12px;
-}
+  .field {
+    margin-bottom: 12px;
+  }
 
-.field label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 6px;
-}
+  /* Map absolute fill kept for desktop as well */
+  #map {
+    position: absolute;
+    inset: 0;
+  }
 
-.map-wrap {
-  position: relative;
-}
+  /* Desktop toggle button on left edge */
+  .sidebar-toggle {
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 48px;
+    border: 1px solid #e0e0e0;
+    border-left: none;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+    border-bottom-left-radius: 0;
+  }
 
-#map {
-  position: absolute;
-  inset: 0;
-}
+  .sidebar-toggle::before {
+    content: '<';
+  }
 
-.sidebar-toggle {
-  top: 50%;
-  left: 0;
-  transform: translateY(-50%);
-  width: 24px;
-  height: 48px;
-  border: 1px solid #e0e0e0;
-  border-left: none;
-  border-top-right-radius: 4px;
-  border-bottom-right-radius: 4px;
-  border-bottom-left-radius: 0;
-}
+  .sidebar-toggle.collapsed {
+    transform: translateY(-50%) rotate(180deg);
+  }
 
-.sidebar-toggle::before {
-  content: '<';
-}
+  /* Language menu */
+  .lang-menu {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 1000;
+  }
 
-.sidebar-toggle.collapsed {
-  transform: translateY(-50%) rotate(180deg);
-}
+  .lang-menu select {
+    padding: 6px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #fff;
+    font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    cursor: pointer;
+  }
 
-body.sidebar-collapsed .pills {
-  position: fixed;
-  bottom: 12px;
-  left: 12px;
-  z-index: 1000;
-  margin-top: 0;
-  margin-bottom: 0;
-}
-
-/* Language selection menu */
-.lang-menu {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 1000;
-}
-
-.lang-menu select {
-  padding: 6px 10px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  background: #fff;
-  font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-  cursor: pointer;
-}
-
-/* Search box drop down menu */
-.ac-list {
-  max-height: 260px;
-  font-size: 12px;
-}
-
+  /* Desktop autocomplete tweaks */
+  .ac-list {
+    max-height: 260px;
+    font-size: 12px;
+  }
 }
