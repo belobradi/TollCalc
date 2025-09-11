@@ -22,20 +22,15 @@ jobs:
       - name: Prepare static files
         run: |
           mkdir -p public
-          rsync -av \
-            --include='index.html' \
-            --include='CNAME' \
-            --include='*.css' \
-            --include='*.js' \
-            --include='assets/***' \
-            --include='app/***' \
-            --include='core/***' \
-            --include='data/***' \
-            --include='services/***' \
-            --include='ui/***' \
-            --exclude='.*' \
-            --exclude='.github/***' \
-            ./ public/
+          # Copy main files
+          cp index.html public/
+          cp CNAME public/
+          cp styles.css public/
+          # Copy directories that exist
+          cp -r assets/ public/ 2>/dev/null || true
+          cp -r js/ public/ 2>/dev/null || true
+          cp -r data/ public/ 2>/dev/null || true
+          # Create .nojekyll for GitHub Pages
           touch public/.nojekyll
 
       - name: Upload Pages artifact

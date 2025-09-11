@@ -5,7 +5,10 @@
   "main": "js/app.js",
   "scripts": {
     "lint": "eslint .",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test-deploy": "./scripts/test-deploy.sh",
+    "serve": "npx serve .",
+    "serve-deploy": "cd test_deploy && npx serve ."
   },
   "repository": {
     "type": "git",
