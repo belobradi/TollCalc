@@ -1,7 +1,5 @@
 # TollCalc - Serbian Toll Road Calculator
 
-**Note:** Changes are not directly pushed to the main branch but through merge requests.
-
 A web application for calculating toll prices on Serbian highways, with an interactive map interface.
 
 ## 🌐 Live Website
@@ -50,14 +48,14 @@ The project uses **automated deployment** via GitHub Actions:
 - **Trigger**: Version tags (e.g., `v1.0.1`)
 - **Platform**: GitHub Pages
 
-### To Deploy:
-1. Commit and push changes to `main` branch
-2. Create and push a version tag:
+### To Deploy
+1. Submit your changes via a pull request.
+2. After your pull request is reviewed and merged into the `main` branch, create and push a version tag:
    ```bash
-git tag v1.0.2
-git push origin v1.0.2
+   git tag v1.0.2
+   git push origin v1.0.2
    ```
-3. GitHub Actions will automatically deploy to production
+3. GitHub Actions will automatically deploy to production.
 
 For detailed deployment information, see [DEPLOYMENT.md](./DEPLOYMENT.md).
 
