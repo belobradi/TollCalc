@@ -18,6 +18,7 @@ import { nls, setLocale, applyLocaleTexts, getAppLanguage } from './i18n.js'
 import { startEndToRouteData, computeRamps, computeRampCharges } from './routing.js'
 import { reverseToShortAddress } from './utils.js'
 import { setAddressField, updateDistance, updatePrice, showMessage } from './ui.js'
+import { getCurrentLocationWithAddress, checkGeolocationAvailability } from './geolocation.js'
 
 let navStart = null
 let navEnd = null
@@ -155,11 +156,94 @@ function initAddressInputs () {
   endEl?.addEventListener('input', onAddressInput)
 }
 
+async function initLocationButton () {
+  const locationBtn = document.getElementById('locationBtn')
+  if (!locationBtn) return
+
+  // Check if geolocation is available
+  const isAvailable = await checkGeolocationAvailability()
+  if (!isAvailable) {
+    locationBtn.style.display = 'none'
+    return
+  }
+
+  locationBtn.addEventListener('click', async () => {
+    locationBtn.disabled = true
+    locationBtn.classList.add('loading')
+    
+    try {
+      showMessage(nls().GETTING_LOCATION + '...')
+      
+      const location = await getCurrentLocationWithAddress()
+      
+      // Clear existing start location
+      if (navStartMarker) {
+        removeMarker(navStartMarker)
+        navStartMarker = null
+      }
+      
+      // Set new start location
+      navStart = [location.lat, location.lon]
+      navStartMarker = addMarker(location.lat, location.lon, nls().CURRENT_LOCATION, true)
+      setAddressField('startAddress', location.address)
+      
+      // If destination exists, draw route
+      if (navEnd) {
+        await drawRoute(navStart, navEnd)
+      } else {
+        showMessage('')
+      }
+      
+    } catch (error) {
+      console.error('Geolocation error:', error)
+      let message = nls().LOCATION_UNAVAILABLE
+      
+      if (error.message.includes('denied')) {
+        message = nls().LOCATION_DENIED
+      } else if (error.message.includes('timeout')) {
+        message = nls().LOCATION_TIMEOUT
+      }
+      
+      showMessage(message)
+    } finally {
+      locationBtn.disabled = false
+      locationBtn.classList.remove('loading')
+    }
+  })
+}
+
+async function autoSetCurrentLocation() {
+  // Only auto-populate if start address is empty and geolocation is available
+  const startEl = document.getElementById('startAddress')
+  if (!startEl || startEl.value.trim() !== '') return
+
+  const isAvailable = await checkGeolocationAvailability()
+  if (!isAvailable) return
+
+  try {
+    showMessage(nls().GETTING_LOCATION + '...')
+    
+    const location = await getCurrentLocationWithAddress()
+    
+    // Set start location
+    navStart = [location.lat, location.lon]
+    navStartMarker = addMarker(location.lat, location.lon, nls().CURRENT_LOCATION, true)
+    setAddressField('startAddress', location.address)
+    
+    showMessage('')
+  } catch (error) {
+    console.warn('Auto-location failed:', error)
+    // Silently fail for auto-population, don't show error to user
+    showMessage('')
+  }
+}
+
 async function init () {
   initMap('map')
   initSidebarToggle()
   initLocaleUI()
   initAddressInputs()
+  initLocationButton()
 
   document.getElementById('resetBtn')?.addEventListener('click', reset)
   document.getElementById('clearBtn')?.addEventListener('click', reset)
@@ -211,6 +295,9 @@ async function init () {
       if (navStart) drawRoute(navStart, navEnd)
     }
   })
+
+  // Auto-populate start location with current position
+  await autoSetCurrentLocation()
 }
 
 ;(async function enter () {
