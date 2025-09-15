@@ -68,6 +68,56 @@ body {
   margin-bottom: 10px;
 }
 
+/* Address input container with location button */
+.address-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.address-input-container .textlike {
+  flex: 1;
+  padding-right: 40px; /* make space for location button */
+}
+
+.location-btn {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.location-btn:hover {
+  background-color: #f1f5f9;
+}
+
+.location-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.location-btn.loading {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
 /* Pills */
 .pills {
   display: none;           /* JS sets it to flex when route is ready */

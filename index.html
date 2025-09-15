@@ -38,7 +38,10 @@
       <aside class="sidebar">
         <!-- Start / End “search” boxes -->
         <div class="field">
-          <input type="text" id="startAddress" name="address" class="textlike" placeholder="Odaberite adresu polaska" />
+          <div class="address-input-container">
+            <input type="text" id="startAddress" name="address" class="textlike" placeholder="Odaberite adresu polaska" />
+            <button id="locationBtn" class="location-btn" title="Trenutna lokacija">📍</button>
+          </div>
         </div>
         <div class="field">
           <input type="text" id="endAddress" name="address" class="textlike" placeholder="Odaberite destinaciju" />

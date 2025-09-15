@@ -14,6 +14,11 @@ export const LOCALES = {
     DESTINATION: 'Destinacija',
     FINDING_ROUTE: 'Tražim putanju',
     ROUTING_FAILED: 'Rutiranje nije uspelo (mreža/OSRM).',
+    GETTING_LOCATION: 'Dobijam trenutnu lokaciju',
+    LOCATION_DENIED: 'Pristup lokaciji je odbijen',
+    LOCATION_UNAVAILABLE: 'Lokacija nije dostupna',
+    LOCATION_TIMEOUT: 'Zahtev za lokaciju je istekao',
+    CURRENT_LOCATION: 'Trenutna lokacija',
     KM: 'km',
     RSD: 'din',
     acceptLang: 'sr,en;q=0.8',
@@ -31,6 +36,11 @@ export const LOCALES = {
     DESTINATION: 'Дестинација',
     FINDING_ROUTE: 'Тражим путању',
     ROUTING_FAILED: 'Рутирање није успело (мрежа/OSRM).',
+    GETTING_LOCATION: 'Добијам тренутну локацију',
+    LOCATION_DENIED: 'Приступ локацији је одбијен',
+    LOCATION_UNAVAILABLE: 'Локација није доступна',
+    LOCATION_TIMEOUT: 'Захтев за локацију је истекао',
+    CURRENT_LOCATION: 'Тренутна локација',
     KM: 'км',
     RSD: 'дин',
     acceptLang: 'sr,en;q=0.8',
@@ -48,6 +58,11 @@ export const LOCALES = {
     DESTINATION: 'Destination',
     FINDING_ROUTE: 'Finding route',
     ROUTING_FAILED: 'Routing failed (network/OSRM).',
+    GETTING_LOCATION: 'Getting current location',
+    LOCATION_DENIED: 'Location access denied',
+    LOCATION_UNAVAILABLE: 'Location unavailable',
+    LOCATION_TIMEOUT: 'Location request timed out',
+    CURRENT_LOCATION: 'Current location',
     KM: 'km',
     RSD: 'RSD',
     acceptLang: 'en,sr;q=0.8',
@@ -249,6 +264,8 @@ export function applyLocaleTexts () {
   if (optK1) optK1.textContent = nls().K1_CAR
   const resetBtn = document.getElementById('resetBtn')
   if (resetBtn) resetBtn.textContent = nls().RESET
+  const locationBtn = document.getElementById('locationBtn')
+  if (locationBtn) locationBtn.title = nls().CURRENT_LOCATION
 
   document.documentElement.removeAttribute('data-i18n')
 }
