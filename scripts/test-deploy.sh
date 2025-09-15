@@ -6,6 +6,7 @@
 echo "🚀 TollCalc Deployment Test"
 echo "=========================="
 
+cd ..
 # Clean up any existing test deployment
 if [ -d "test_deploy" ]; then
     rm -rf test_deploy
@@ -56,8 +57,5 @@ echo ""
 echo "✨ Test deployment complete!"
 echo "📁 Files are in ./test_deploy/"
 echo ""
-echo "To serve locally:"
-echo "  cd test_deploy && npx serve ."
-echo ""
-echo "To clean up:"
-echo "  rm -rf test_deploy"
+echo "Serving locally..."
+npx serve ./test_deploy
