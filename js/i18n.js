@@ -264,6 +264,8 @@ export function applyLocaleTexts () {
   if (optK1) optK1.textContent = nls().K1_CAR
   const resetBtn = document.getElementById('resetBtn')
   if (resetBtn) resetBtn.textContent = nls().RESET
+  const locationBtn = document.getElementById('locationBtn')
+  if (locationBtn) locationBtn.title = nls().CURRENT_LOCATION
 
   document.documentElement.removeAttribute('data-i18n')
 }
